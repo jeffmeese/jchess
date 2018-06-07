@@ -1,11 +1,11 @@
 =======================
-==    simple-chess   ==
+==    jchess         ==
 =======================
-A simple chess program I'm developing for my own amusement. The program can be run as either a text-based program or in a (very) crude GUI. The text-based version is better for testing and comes with a substantial move generation tester using perft values. 
+A simple chess program I'm developing for my own amusement.
 
 Board Representations
 =====================
-I plan to implement a few different board representations to see which one I like best. The current implementation uses 0x88, but I would like to implement a standard 8x8 board, a 15x12 board, and bitboards.
+Currently, I have a couple different board representations. I have an 0x88 board and a standard 8x8 board. Next on the docket is bitboards. I've set it up so that changing board representations is very simple. See the board.h file to see how it's done.
 
 Move Generation
 ===============
@@ -18,6 +18,5 @@ I'm going to start with a NegaMax search. Next an alpha-beta search will be impl
 Evaluation Functions
 ====================
 At first a simple piece weight evaluation function will be used. I haven't done a lot of research on evaluation so I'll defer planning more until I get more knowledge on the subject.
+
  
-Jeff Meese
-Michigan, USA
