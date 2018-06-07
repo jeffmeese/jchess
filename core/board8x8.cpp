@@ -10,7 +10,7 @@
 #define getCol(index) ( (index % 8) )
 
 // Constant for invalid square position
-const uchar Board8x8::INVALID_SQUARE = 64;
+static const uchar INVALID_SQUARE = 64;
 
 // Attack Offsets
 static const char NORTH =  8;
@@ -21,14 +21,14 @@ static const char NW    =  7;
 static const char NE    =  9;
 static const char SW    = -9;
 static const char SE    = -7;
-static const char DDL   = -17;
-static const char DDR   = -15;
-static const char LLD   = -10;
-static const char RRD   = -6;
-static const char RRU   =  10;
-static const char LLU   =  6;
-static const char UUR   =  17;
-static const char UUL   =  15;
+static const char SSW   = -17;
+static const char SSE   = -15;
+static const char WWS   = -10;
+static const char EES   = -6;
+static const char EEN   =  10;
+static const char WWN   =  6;
+static const char NNE   =  17;
+static const char NNW   =  15;
 
 // Attack vectors for pieces
 // The king and queen attacks are identical but are both included for clarity
@@ -36,7 +36,7 @@ static const char whitePawnAttacks[] = {NE, NW};
 static const char blackPawnAttacks[] = {SE, SW};
 static const char rookAttacks[]      = {NORTH, SOUTH, EAST, WEST};
 static const char bishopAttacks[]    = {NW, NE, SE, SW};
-static const char knightAttacks[]    = {DDL, DDR, RRD, LLD, RRU, LLU, UUR, UUL};
+static const char knightAttacks[]    = {SSW, SSE, WWS, EES, EEN, WWN, NNE, NNW};
 static const char queenAttacks[]     = {NORTH, SOUTH, EAST, WEST, NW, NE, SW, SE};
 static const char kingAttacks[]      = {NORTH, SOUTH, EAST, WEST, NW, NE, SW, SE};
 

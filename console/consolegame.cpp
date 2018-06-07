@@ -37,7 +37,7 @@ void ConsoleGame::doPerft(int perftLevel) const
   timer.start();
   ulonglong totalNodes = perft.execute(perftLevel);
   timer.stop();
-  std::cout << "Total Nodes: " << totalNodes << " Time: " << timer.elapsed()/1e3 << "\n";
+  std::cout << "Total Nodes: " << totalNodes << " Time: " << timer.elapsed()/1e3 << " milliseconds\n";
 }
 
 void ConsoleGame::executeEngineMove()

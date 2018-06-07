@@ -44,10 +44,6 @@ private:
   bool isCellAttacked(uchar index, Color attackingColor) const;
   void pushMove(uchar from, uchar to, Piece piece, Piece capture, Piece promote, Move::Type type, MoveList & moveList) const;
 
-  // Internal constants
-private:
-  static const uchar INVALID_SQUARE;
-
   // Members
   // The attack vectors below are precomputed in initAttacks
   // and contain the possible destination squares for each type

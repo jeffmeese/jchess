@@ -8,15 +8,15 @@
 #include <iostream>
 #include <map>
 
-// Values for invalid entries
-static const uchar NO_PIECE_INDEX = 17;
-static const uchar INVALID_SQ     = 0x88;
-
 // Macros for mapping (row,col)->index and vice-versa and valid squares
 #define getIndex(row,col) (((row)<<4)+(col))
 #define getRow(index) ( (index >> 4) )
 #define getCol(index) ( (index & 7) )
 #define validSquare(x)  ( !((x) & INVALID_SQ ))
+
+// Values for invalid entries
+static const uchar NO_PIECE_INDEX = 17;
+static const uchar INVALID_SQ     = 0x88;
 
 // Index values for piece entries
 static const uchar FIRST_ROOK_INDEX    = 0;
@@ -38,14 +38,14 @@ static const char NW    =  15;
 static const char NE    =  17;
 static const char SW    = -17;
 static const char SE    = -15;
-static const char DDL   = -33;
-static const char DDR   = -31;
-static const char LLD   = -18;
-static const char RRD   = -14;
-static const char RRU   =  18;
-static const char LLU   =  14;
-static const char UUR   =  33;
-static const char UUL   =  31;
+static const char SSW   = -33;
+static const char SSE   = -31;
+static const char WWS   = -18;
+static const char EES   = -14;
+static const char EEN   =  18;
+static const char WWN   =  14;
+static const char NNE   =  33;
+static const char NNW   =  31;
 
 // Attack vectors for pieces
 // The king and queen attacks are identical but are both included for clarity
@@ -53,10 +53,11 @@ static const char whitePawnAttacks[] = {NE, NW};
 static const char blackPawnAttacks[] = {SE, SW};
 static const char rookAttacks[]      = {NORTH, SOUTH, EAST, WEST};
 static const char bishopAttacks[]    = {NW, NE, SE, SW};
-static const char knightAttacks[]    = {DDL, DDR, RRD, LLD, RRU, LLU, UUR, UUL};
+static const char knightAttacks[]    = {SSW, SSE, WWS, EES, EEN, WWN, NNE, NNW};
 static const char queenAttacks[]     = {NORTH, SOUTH, EAST, WEST, NW, NE, SW, SE};
 static const char kingAttacks[]      = {NORTH, SOUTH, EAST, WEST, NW, NE, SW, SE};
 
+// Square definitions
 enum Square
 {
   A1=0  , B1, C1, D1, E1, F1, G1, H1,
@@ -735,7 +736,6 @@ void Board0x88::setPosition(const std::string &fenString)
       }
     }
   }
-
 }
 
 void Board0x88::unmakeMove(const Move & move)
