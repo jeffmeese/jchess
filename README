@@ -1,0 +1,23 @@
+=======================
+==    simple-chess   ==
+=======================
+A simple chess program I'm developing for my own amusement. The program can be run as either a text-based program or in a (very) crude GUI. The text-based version is better for testing and comes with a substantial move generation tester using perft values. 
+
+Board Representations
+=====================
+I plan to implement a few different board representations to see which one I like best. The current implementation uses 0x88, but I would like to implement a standard 8x8 board, a 15x12 board, and bitboards.
+
+Move Generation
+===============
+Currently, pseudo-legal move generation is used. I may eventually move to a legal move generator but this works for now. 
+
+Search Functions
+================
+I'm going to start with a NegaMax search. Next an alpha-beta search will be implemented. Once these are complete, I'll move on to things like iterative deepening and transposition tables.
+
+Evaluation Functions
+====================
+At first a simple piece weight evaluation function will be used. I haven't done a lot of research on evaluation so I'll defer planning more until I get more knowledge on the subject.
+ 
+Jeff Meese
+Michigan, USA
