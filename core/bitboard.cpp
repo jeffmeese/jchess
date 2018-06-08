@@ -150,11 +150,43 @@ int BitBoard::bitScanForwardPopCount(U64 bb) const
 
 void BitBoard::generateMoves(MoveList & moveList) const
 {
-
+  for (uchar sq = 0; sq < 64; sq++) {
+    Piece piece = mPieces[sq];
+    Color color = mColors[sq];
+    if (color == side && piece != Piece::None) {
+      switch (piece) {
+        case Piece::Pawn:
+          break;
+        case Piece::Rook:
+          break;
+        case Piece::Knight:
+          break;
+        case Piece::Bishop:
+          break;
+        case Piece::Queen:
+          break;
+        case Piece::King:
+          break;
+      }
+    }
+  }
 }
 
 void BitBoard::initAttacks()
 {
+  static const int knightRowIncr[]    = {1, 2, 2, 1, -1, -2, -2, -1};
+  static const int knightColIncr[]    = {-2, -1, 1, 2, 2, 1, -1, -2};
+  static const int kingRowIncr[]      = {1, 1, 1, 0, -1, -1, -1, 0};
+  static const int kingColIncr[]      = {-1, 0, 1, 1, 1, 0, -1, -1};
+  static const int whitePawnRowIncr[] = {1, 1};
+  static const int whitePawnColIncr[] = {-1, 1};
+  static const int blackPawnRowIncr[] = {-1, -1};
+  static const int blackPawnColIncr[] = {-1, 1};
+  static const int straightRowIncr[]  = {0, 0, 1, -1};
+  static const int straightColIncr[]  = {1, -1, 0, 0};
+  static const int diagRowIncr[]      = {1, 1, -1, -1};
+  static const int diagColIncr[]      = {1, -1, -1, 1};
+
   for (int i = 0; i < 64; i++) {
     mBishopAttacks[i] = 0ULL;
     mRookAttacks[i] = 0ULL;
@@ -164,147 +196,74 @@ void BitBoard::initAttacks()
     mBlackPawnAttacks[i] = 0ULL;
   }
 
-  // The loops below could probably be functionalized
+  // Precompute attacks for each square
   for (char sourceRow = 0; sourceRow < 8; sourceRow++) {
     for (char sourceCol = 0; sourceCol < 8; sourceCol++) {
       uchar index = getIndex(sourceRow, sourceCol);
 
-      // Knight attacks
-      for (char i = 0; i < 8; i++) {
-        uchar destIndex = index + knightAttacks[i];
-        uchar destRow = getRow(destIndex);
-        uchar destCol = getCol(destIndex);
-        if (abs(destRow-sourceRow) <= 2 && abs(destCol-sourceCol) <= 2) {
-          if (destRow >= 0 && destRow < 8 && destCol >= 0 && destCol < 8) {
-            mKnightAttacks[index] |= (C64(1) << destIndex);
-          }
-        }
-      }
-
-      // King attacks
-      for (char i = 0; i < 8; i++) {
-        uchar destIndex = index + kingAttacks[i];
-        uchar destRow = getRow(destIndex);
-        uchar destCol = getCol(destIndex);
-
-        if (abs(destRow-sourceRow) <= 1 && abs(destCol-sourceCol) <= 1) {
-          if (destRow >= 0 && destRow < 8 && destCol >= 0 && destCol < 8) {
-            mKingAttacks[index] |= (C64(1) << destIndex);
-          }
-        }
-      }
-
       // White pawn attacks
-      for (char i = 0; i < 2; i++) {
-        uchar destIndex = index + whitePawnAttacks[i];
-        uchar destRow = getRow(destIndex);
-        uchar destCol = getCol(destIndex);
-        if (abs(destRow-sourceRow) <= 1 && abs(destCol-sourceCol) <= 1) {
-          if (destRow >= 0 && destRow < 8 && destCol >= 0 && destCol < 8) {
-            mWhitePawnAttacks[index] |= (C64(1) << destIndex);
-          }
+      for (int k = 0; k < 2; k++) {
+        char destRow = sourceRow + whitePawnRowIncr[k];
+        char destCol = sourceCol + whitePawnColIncr[k];
+        if (destRow >= 0 && destRow < 8 && destCol >= 0 && destCol < 8) {
+          uchar destIndex = getIndex(destRow, destCol);
+          mWhitePawnAttacks[index] |= (C64(1) << destIndex);
         }
       }
 
       // Black pawn attacks
-      for (char i = 0; i < 2; i++) {
-        uchar destIndex = index + blackPawnAttacks[i];
-        uchar destRow = getRow(destIndex);
-        uchar destCol = getCol(destIndex);
-        std::cout << static_cast<int>(destRow) << " " << static_cast<int>(destCol) << "\n";
-        if (abs(destRow-sourceRow) <= 1 && abs(destCol-sourceCol) <= 1) {
+      for (int k = 0; k < 2; k++) {
+        char destRow = sourceRow + blackPawnRowIncr[k];
+        char destCol = sourceCol + blackPawnColIncr[k];
+        if (destRow >= 0 && destRow < 8 && destCol >= 0 && destCol < 8) {
+          uchar destIndex = getIndex(destRow, destCol);
+          mBlackPawnAttacks[index] |= (C64(1) << destIndex);
+        }
+      }
+
+      // Knight attacks
+      for (char k = 0; k < 8; k++) {
+        char destRow = sourceRow + knightRowIncr[k];
+        char destCol = sourceCol + knightColIncr[k];
+        if (destRow >= 0 && destRow < 8 && destCol >= 0 && destCol < 8) {
+          uchar destIndex = getIndex(destRow, destCol);
+          mKnightAttacks[index] |= (C64(1) << destIndex);
+        }
+      }
+
+      // King attacks
+      for (char k = 0; k < 8; k++) {
+        char destRow = sourceRow + kingRowIncr[k];
+        char destCol = sourceCol + kingColIncr[k];
+        if (destRow >= 0 && destRow < 8 && destCol >= 0 && destCol < 8) {
+          uchar destIndex = getIndex(destRow, destCol);
+          mKingAttacks[index] |= (C64(1) << destIndex);
+        }
+      }
+
+      // Slider attacks
+      for (int k = 0; k < 4; k++) {
+        for (char i = 0; i < 8; i++) {
+          char destRow = sourceRow + straightRowIncr[k]*(i+1);
+          char destCol = sourceCol + straightColIncr[k]*(i+1);
           if (destRow >= 0 && destRow < 8 && destCol >= 0 && destCol < 8) {
-            mBlackPawnAttacks[index] |= (C64(1) << destIndex);
+            uchar destIndex = getIndex(destRow, destCol);
+            mRookAttacks[index] |= (C64(1) << destIndex);
+          }
+        }
+
+        for (char i = 0; i < 8; i++) {
+          char destRow = sourceRow + diagRowIncr[k]*(i+1);
+          char destCol = sourceCol + diagColIncr[k]*(i+1);
+          if (destRow >= 0 && destRow < 8 && destCol >= 0 && destCol < 8) {
+            uchar destIndex = getIndex(destRow, destCol);
+            mBishopAttacks[index] |= (C64(1) << destIndex);
           }
         }
       }
-
-      // East attacks
-      for (char i = 0; i < 8; i++) {
-        char destCol = sourceCol + (i+1);
-        if (destCol > 7)
-          break;
-
-        uchar destIndex = getIndex(sourceRow, destCol);
-        mRookAttacks[index] |= (C64(1) << destIndex);
-      }
-
-      // West attacks
-      for (char i = 0; i < 8; i++) {
-        char destCol = sourceCol - (i+1);
-        if (destCol < 0)
-          break;
-
-        uchar destIndex = getIndex(sourceRow, destCol);
-        mRookAttacks[index] |= (C64(1) << destIndex);
-      }
-
-      // North attacks
-      for (char i = 0; i < 8; i++) {
-        char destRow = sourceRow + (i+1);
-        if (destRow > 7)
-          break;
-
-        uchar destIndex = getIndex(destRow, sourceCol);
-        mRookAttacks[index] |= (C64(1) << destIndex);
-      }
-
-      // South attacks
-      for (char i = 0; i < 8; i++) {
-        char destRow = sourceRow - (i+1);
-        if (destRow < 0)
-          break;
-
-        uchar destIndex = getIndex(destRow, sourceCol);
-        mRookAttacks[index] |= (C64(1) << destIndex);
-      }
-
-      // North east attacks
-      for (char i = 0; i < 8; i++) {
-        char destRow = sourceRow + (i+1);
-        char destCol = sourceCol + (i+1);
-        if (destRow > 7 || destCol > 7) {
-          break;
-        }
-        uchar destIndex = getIndex(destRow, destCol);
-        mBishopAttacks[index] |= (C64(1) << destIndex);
-      }
-
-      // North west attacks
-      for (char i = 0; i < 8; i++) {
-        char destRow = sourceRow + (i+1);
-        char destCol = sourceCol - (i+1);
-        if (destRow > 7 || destCol < 0) {
-          break;
-        }
-        uchar destIndex = getIndex(destRow, destCol);
-        mBishopAttacks[index] |= (C64(1) << destIndex);
-      }
-
-      // South west attacks
-      for (char i = 0; i < 8; i++) {
-        char destRow = sourceRow - (i+1);
-        char destCol = sourceCol - (i+1);
-        if (destRow < 0 || destCol < 0) {
-          break;
-        }
-        uchar destIndex = getIndex(destRow, destCol);
-        mBishopAttacks[index] |= (C64(1) << destIndex);
-      }
-
-      // South east attacks
-      for (char i = 0; i < 8; i++) {
-        char destRow = sourceRow - (i+1);
-        char destCol = sourceCol + (i+1);
-        if (destRow < 0 || destCol > 7) {
-          break;
-        }
-        uchar destIndex = getIndex(destRow, destCol);
-        mBishopAttacks[index] |= (C64(1) << destIndex);
-      }
     }
   }
-  writeBitBoard(mBishopAttacks[18], std::cout);
+  writeBitBoard(mBishopAttacks[1], std::cout);
 }
 
 void BitBoard::initBoard()
