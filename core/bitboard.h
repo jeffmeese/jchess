@@ -41,6 +41,9 @@ private:
   void generateWhitePawnMoves(MoveList & moveList) const;
   void pushBitBoardMoves(U64 bb, uchar fromSq, MoveList & moveList) const;
   void initBoard();
+  void initPawnAttacks();
+  void initKingAttacks();
+  void initKnightAttacks();
   void initAttacks();
   void initDiagAttacks();
   void initStraightAttacks();
@@ -48,9 +51,10 @@ private:
   uchar popCount (U64 x) const;
   void pushMove(uchar from, uchar to, Piece piece, Piece capture, Piece promote, Move::Type type, MoveList & moveList) const;
   U64 rotate90(U64 bb) const;
-  U64 rotate45(U64 bb, const uint * rotMatrix) const;
-  U64 rotateNeg45(U64 bb, const uint * rotMatrix) const;
+  U64 rotateRight45(U64 bb) const;
+  U64 rotateLeft45(U64 bb) const;
   void writeBitBoard(U64 bitboard, std::ostream & output) const;
+  void writeOccupancy(uint occupancy) const;
 
   // Members
 private:
