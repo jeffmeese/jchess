@@ -51,6 +51,7 @@ private:
   uchar popCount (U64 x) const;
   void pushMove(uchar from, uchar to, Piece piece, Piece capture, Piece promote, Move::Type type, MoveList & moveList) const;
   U64 rotate90(U64 bb) const;
+  U64 rotateLeft90(U64 bb) const;
   U64 rotateRight45(U64 bb) const;
   U64 rotateLeft45(U64 bb) const;
   void writeBitBoard(U64 bitboard, std::ostream & output) const;
