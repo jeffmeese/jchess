@@ -44,18 +44,21 @@ private:
   void initPawnAttacks();
   void initKingAttacks();
   void initKnightAttacks();
-  void initAttacks();
-  void initDiagAttacks();
+  void initNonSliderAttacks();
+  void initDiagonalAttacks();
   void initStraightAttacks();
   bool isCellAttacked(uchar index, Color attackingColor) const;
+  U64 invRotateL45(U64 bb) const;
+  U64 invRotateR45(U64 bb) const;
   uchar popCount (U64 x) const;
   void pushMove(uchar from, uchar to, Piece piece, Piece capture, Piece promote, Move::Type type, MoveList & moveList) const;
-  U64 rotate90(U64 bb) const;
-  U64 rotateLeft90(U64 bb) const;
-  U64 rotateRight45(U64 bb) const;
-  U64 rotateLeft45(U64 bb) const;
+  U64 rotateL90(U64 bb) const;
+  U64 rotateR90(U64 bb) const;
+  U64 rotateL45(U64 bb) const;
+  U64 rotateR45(U64 bb) const;
+  void updateAggregateBitBoards();
   void writeBitBoard(U64 bitboard, std::ostream & output) const;
-  void writeOccupancy(uint occupancy) const;
+  void writeOccupancy(uint occupancy, bool flip = false) const;
 
   // Members
 private:
@@ -68,9 +71,10 @@ private:
   U64 mBlackPieces;
   U64 mBlackRooks;
   U64 mEmptySquares;
-  U64 mRotate90AllPieces;
-  U64 mRotate45LeftPieces;
-  U64 mRotate45RightPieces;
+  U64 mRotateRight90Pieces;
+  U64 mRotateLeft45Pieces;
+  U64 mRotateRight45Pieces;
+  U64 mRotateLeft90Pieces;
   U64 mWhiteBishops;
   U64 mWhiteKings;
   U64 mWhiteKnights;
@@ -90,6 +94,7 @@ private:
   uint mA1H8Mask[64];
   uint mA8H1Shifts[64];
   uint mA8H1Mask[64];
+  uint mInvRotR45[64];
   Piece mPieces[64];     // Redundant piece matrix for quick lookup
   Color mColors[64];     // Redundant color matrix for quick lookup
 };

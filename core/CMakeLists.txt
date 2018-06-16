@@ -18,6 +18,7 @@ set(JCHESS_SOURCES
     evaluation.cpp
     fen.cpp
     move.cpp
+    movelist.cpp
     negamaxsearch.cpp
     perft.cpp
     search.cpp

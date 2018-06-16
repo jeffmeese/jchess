@@ -15,6 +15,7 @@ public:
   void addMove(const Move & newMove);
   void clear();
   Move moveAt(uchar index) const;
+  void print(std::ostream & output) const;
   void removeLast();
 
 public:
