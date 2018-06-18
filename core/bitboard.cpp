@@ -914,38 +914,38 @@ void BitBoard::makeMove(const Move & move)
   }
 
   // Handle promotions
-//  if (move.isPromotion() || move.isPromotionCapture()) {
+  if (move.isPromotion() || move.isPromotionCapture()) {
 
-//    // Get bit boards
-//    U64 & pawns = (side == Color::White) ? mWhitePawns : mBlackPawns;
-//    U64 & queens = (side == Color::White) ? mWhiteQueens : mBlackQueens;
-//    U64 & rooks = (side == Color::White) ? mWhiteRooks : mBlackRooks;
-//    U64 & knights = (side == Color::White) ? mWhiteKnights : mBlackKnights;
-//    U64 & bishops = (side == Color::White) ? mWhiteBishops : mBlackBishops;
+    // Get bit boards
+    U64 & pawns = (side == Color::White) ? mWhitePawns : mBlackPawns;
+    U64 & queens = (side == Color::White) ? mWhiteQueens : mBlackQueens;
+    U64 & rooks = (side == Color::White) ? mWhiteRooks : mBlackRooks;
+    U64 & knights = (side == Color::White) ? mWhiteKnights : mBlackKnights;
+    U64 & bishops = (side == Color::White) ? mWhiteBishops : mBlackBishops;
 
-//    // Remove the pawn
-//    pawns ^= (ONE << fromSquare);
+    // Remove the pawn
+    pawns ^= (ONE << fromSquare);
 
-//    // Update the piece type array and the bit boards
-//    switch (move.promotedPiece()) {
-//      case Piece::Queen:
-//        mPieceType[toSquare] = (side == Color::White) ? PieceType::WhiteQueen : PieceType::BlackQueen;
-//        queens ^= (ONE << toSquare);
-//        break;
-//      case Piece::Rook:
-//        mPieceType[toSquare] = (side == Color::White) ? PieceType::WhiteRook : PieceType::BlackRook;
-//        rooks ^= (ONE << toSquare);
-//        break;
-//      case Piece::Bishop:
-//        mPieceType[toSquare] = (side == Color::White) ? PieceType::WhiteBishop : PieceType::BlackBishop;
-//        bishops ^= (ONE << toSquare);
-//        break;
-//      case Piece::Knight:
-//        mPieceType[toSquare] = (side == Color::White) ? PieceType::WhiteKnight : PieceType::BlackKnight;
-//        knights ^= (ONE << toSquare);
-//        break;
-//    }
-//  }
+    // Update the piece type array and the bit boards
+    switch (move.promotedPiece()) {
+      case Piece::Queen:
+        mPieceType[toSquare] = (side == Color::White) ? PieceType::WhiteQueen : PieceType::BlackQueen;
+        queens ^= (ONE << toSquare);
+        break;
+      case Piece::Rook:
+        mPieceType[toSquare] = (side == Color::White) ? PieceType::WhiteRook : PieceType::BlackRook;
+        rooks ^= (ONE << toSquare);
+        break;
+      case Piece::Bishop:
+        mPieceType[toSquare] = (side == Color::White) ? PieceType::WhiteBishop : PieceType::BlackBishop;
+        bishops ^= (ONE << toSquare);
+        break;
+      case Piece::Knight:
+        mPieceType[toSquare] = (side == Color::White) ? PieceType::WhiteKnight : PieceType::BlackKnight;
+        knights ^= (ONE << toSquare);
+        break;
+    }
+  }
 
   // Handle king move
   if (move.piece() == Piece::King) {
@@ -1007,34 +1007,34 @@ void BitBoard::makeMove(const Move & move)
   }
 
   // Handle castle move
-//  if (move.isCastle()) {
-//    switch (toSquare) {
-//    case C1:
-//      mPieceType[D1] = PieceType::WhiteRook;
-//      mPieceType[A1] = PieceType::None;
-//      mWhiteRooks ^= (ONE << D1);
-//      mWhiteRooks ^= (ONE << A1);
-//      break;
-//    case G1:
-//      mPieceType[F1] = PieceType::WhiteRook;
-//      mPieceType[H1] = PieceType::None;
-//      mWhiteRooks ^= (ONE << F1);
-//      mWhiteRooks ^= (ONE << H1);
-//      break;
-//    case C8:
-//      mPieceType[D8] = PieceType::BlackRook;
-//      mPieceType[A8] = PieceType::None;
-//      mBlackRooks ^= (ONE << D8);
-//      mBlackRooks ^= (ONE << A8);
-//      break;
-//    case G8:
-//      mPieceType[F8] = PieceType::BlackRook;
-//      mPieceType[H8] = PieceType::None;
-//      mBlackRooks ^= (ONE << F8);
-//      mBlackRooks ^= (ONE << H8);
-//      break;
-//    }
-//  }
+  if (move.isCastle()) {
+    switch (toSquare) {
+    case C1:
+      mPieceType[D1] = PieceType::WhiteRook;
+      mPieceType[A1] = PieceType::None;
+      mWhiteRooks ^= (ONE << D1);
+      mWhiteRooks ^= (ONE << A1);
+      break;
+    case G1:
+      mPieceType[F1] = PieceType::WhiteRook;
+      mPieceType[H1] = PieceType::None;
+      mWhiteRooks ^= (ONE << F1);
+      mWhiteRooks ^= (ONE << H1);
+      break;
+    case C8:
+      mPieceType[D8] = PieceType::BlackRook;
+      mPieceType[A8] = PieceType::None;
+      mBlackRooks ^= (ONE << D8);
+      mBlackRooks ^= (ONE << A8);
+      break;
+    case G8:
+      mPieceType[F8] = PieceType::BlackRook;
+      mPieceType[H8] = PieceType::None;
+      mBlackRooks ^= (ONE << F8);
+      mBlackRooks ^= (ONE << H8);
+      break;
+    }
+  }
 
   // Set the castling rights
   setCastlingRights(castling);
@@ -1382,31 +1382,31 @@ void BitBoard::unmakeMove(const Move & move)
   }
 
   // Handle promotions
-//  if (move.isPromotion() || move.isPromotionCapture()) {
-//    mPieceType[fromSquare] = (side == Color::White) ? PieceType::BlackPawn : PieceType::WhitePawn;
+  if (move.isPromotion() || move.isPromotionCapture()) {
+    mPieceType[fromSquare] = (side == Color::White) ? PieceType::BlackPawn : PieceType::WhitePawn;
 
-//    U64 & pawns = (side == Color::Black) ? mWhitePawns : mBlackPawns;
-//    U64 & rooks = (side == Color::Black) ? mWhiteRooks : mBlackRooks;
-//    U64 & queens = (side == Color::Black) ? mWhiteQueens : mBlackQueens;
-//    U64 & knights = (side == Color::Black) ? mWhiteKnights : mBlackKnights;
-//    U64 & bishops = (side == Color::Black) ? mWhiteBishops : mBlackBishops;
+    U64 & pawns = (side == Color::Black) ? mWhitePawns : mBlackPawns;
+    U64 & rooks = (side == Color::Black) ? mWhiteRooks : mBlackRooks;
+    U64 & queens = (side == Color::Black) ? mWhiteQueens : mBlackQueens;
+    U64 & knights = (side == Color::Black) ? mWhiteKnights : mBlackKnights;
+    U64 & bishops = (side == Color::Black) ? mWhiteBishops : mBlackBishops;
 
-//    pawns ^= (ONE << fromSquare);
-//    switch (move.promotedPiece()) {
-//      case Piece::Queen:
-//        queens ^= (ONE << toSquare);
-//        break;
-//      case Piece::Bishop:
-//        bishops ^= (ONE << toSquare);
-//        break;
-//      case Piece::Rook:
-//        rooks ^= (ONE << toSquare);
-//        break;
-//      case Piece::Knight:
-//        knights ^= (ONE << toSquare);
-//        break;
-//    }
-//  }
+    pawns ^= (ONE << fromSquare);
+    switch (move.promotedPiece()) {
+      case Piece::Queen:
+        queens ^= (ONE << toSquare);
+        break;
+      case Piece::Bishop:
+        bishops ^= (ONE << toSquare);
+        break;
+      case Piece::Rook:
+        rooks ^= (ONE << toSquare);
+        break;
+      case Piece::Knight:
+        knights ^= (ONE << toSquare);
+        break;
+    }
+  }
 
   // Handle king moves
   if (piece == Piece::King) {
@@ -1415,34 +1415,34 @@ void BitBoard::unmakeMove(const Move & move)
   }
 
   // Handle castling move
-//  if (move.isCastle()) {
-//    switch (toSquare) {
-//    case C1:
-//      mPieceType[A1] = PieceType::WhiteRook;
-//      mPieceType[D1] = PieceType::None;
-//      mWhiteRooks ^= (ONE << A1);
-//      mWhiteRooks ^= (ONE << D1);
-//      break;
-//    case G1:
-//      mPieceType[H1] = PieceType::WhiteRook;
-//      mPieceType[F1] = PieceType::None;
-//      mWhiteRooks ^= (ONE << H1);
-//      mWhiteRooks ^= (ONE << F1);
-//      break;
-//    case C8:
-//      mPieceType[A8] = PieceType::BlackRook;
-//      mPieceType[D8] = PieceType::None;
-//      mBlackRooks ^= (ONE << A8);
-//      mBlackRooks ^= (ONE << D8);
-//      break;
-//    case G8:
-//      mPieceType[H8] = PieceType::BlackRook;
-//      mPieceType[F8] = PieceType::None;
-//      mBlackRooks ^= (ONE << H8);
-//      mBlackRooks ^= (ONE << F8);
-//      break;
-//    }
-//  }
+  if (move.isCastle()) {
+    switch (toSquare) {
+    case C1:
+      mPieceType[A1] = PieceType::WhiteRook;
+      mPieceType[D1] = PieceType::None;
+      mWhiteRooks ^= (ONE << A1);
+      mWhiteRooks ^= (ONE << D1);
+      break;
+    case G1:
+      mPieceType[H1] = PieceType::WhiteRook;
+      mPieceType[F1] = PieceType::None;
+      mWhiteRooks ^= (ONE << H1);
+      mWhiteRooks ^= (ONE << F1);
+      break;
+    case C8:
+      mPieceType[A8] = PieceType::BlackRook;
+      mPieceType[D8] = PieceType::None;
+      mBlackRooks ^= (ONE << A8);
+      mBlackRooks ^= (ONE << D8);
+      break;
+    case G8:
+      mPieceType[H8] = PieceType::BlackRook;
+      mPieceType[F8] = PieceType::None;
+      mBlackRooks ^= (ONE << H8);
+      mBlackRooks ^= (ONE << F8);
+      break;
+    }
+  }
 
   // Update the aggregate bitboards
   updateAggregateBitBoards();
