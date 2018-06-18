@@ -5,43 +5,25 @@
 
 #include <cassert>
 #include <sstream>
+#include <intrin.h>
 
-// Macros for mapping (row,col)->index and vice-versa and valid squares
+#pragma intrinsic(_BitScanForward64)
+
+// Helper macros for bitboards
 #define C64(constantU64) constantU64##ULL
 #define ONE C64(1)
+
+// Macros for mapping (row,col)->index and vice-versa
 #define getIndex(row,col) (((row)<<3)+(col))
 #define getRow(index) ( (index >> 3) )
 #define getCol(index) ( (index & 7) )
 
+// Mask for full rank
 static const int FullRank = 255;
 
-// Attack offsets
+// Pawn offsets
 static const char NORTH =  8;
 static const char SOUTH = -8;
-static const char EAST  =  1;
-static const char WEST  = -1;
-static const char NW    =  7;
-static const char NE    =  9;
-static const char SW    = -9;
-static const char SE    = -7;
-static const char SSW   = -17;
-static const char SSE   = -15;
-static const char WWS   = -10;
-static const char EES   = -6;
-static const char EEN   =  10;
-static const char WWN   =  6;
-static const char NNE   =  17;
-static const char NNW   =  15;
-
-// Attack vectors for pieces
-// The king and queen attacks are identical but are both included for clarity
-static const char whitePawnAttacks[] = {NE, NW};
-static const char blackPawnAttacks[] = {SE, SW};
-static const char rookAttacks[]      = {NORTH, SOUTH, EAST, WEST};
-static const char bishopAttacks[]    = {NW, NE, SE, SW};
-static const char knightAttacks[]    = {SSW, SSE, WWS, EES, EEN, WWN, NNE, NNW};
-static const char queenAttacks[]     = {NORTH, SOUTH, EAST, WEST, NW, NE, SW, SE};
-static const char kingAttacks[]      = {NORTH, SOUTH, EAST, WEST, NW, NE, SW, SE};
 
 // Square definition
 enum Square
@@ -251,13 +233,12 @@ const uchar index64[64] =
 BitBoard::BitBoard()
 {
   initBoard();
-  initNonSliderAttacks();
-  initStraightAttacks();
-  initDiagonalAttacks();
-
-  for (uint i = 0; i < 64; i++) {
-    mInvRotR45[rotateR45Matrix[i]] = i;
-  }
+  initBlackPawnAttacks();
+  initWhitePawnAttacks();
+  initKnightAttacks();
+  initKingAttacks();
+  initRookAttacks();
+  initBishopAttacks();
 }
 
 /**
@@ -273,9 +254,12 @@ BitBoard::BitBoard()
  */
 uchar BitBoard::bitScanForward(U64 bb) const
 {
-   static const ulonglong debruijn64 = ulonglong(0x07EDD5E59A4E28C2);
-   assert (bb != 0);
-   return index64[((bb & -bb) * debruijn64) >> 58];
+  ulong index = 0;
+  _BitScanForward64(&index, bb);
+  return static_cast<uchar>(index);
+   //static const ulonglong debruijn64 = ulonglong(0x07EDD5E59A4E28C2);
+   //assert (bb != 0);
+   //return index64[((bb & -bb) * debruijn64) >> 58];
 }
 
 uchar BitBoard::bitScanForwardPopCount(U64 bb) const
@@ -284,108 +268,47 @@ uchar BitBoard::bitScanForwardPopCount(U64 bb) const
   return popCount( (bb & -bb) - 1 );
 }
 
-void BitBoard::generateAttackMoves(U64 bb, MoveList &moveList) const
+void BitBoard::generateAttackMoves(U64 pieces, MoveList &moveList) const
 {
-  U64 bbFriends = bb;
+  U64 bbFriends = pieces;
 
   Color side = sideToMove();
   const U64 * pawnAttacks = (side == Color::White) ? mWhitePawnAttacks : mBlackPawnAttacks;
   U64 oppPieces = (side == Color::White) ? mBlackPieces : mWhitePieces;
 
-  while (bb) {
-    uchar fromSq = bitScanForward(bb);
+  while (pieces) {
+    uchar fromSq = bitScanForward(pieces);
 
-    Piece piece = mPieces[fromSq];
-    switch (piece) {
-    case Piece::Pawn:
+    PieceType type = mPieceType[fromSq];
+    switch (type) {
+    case PieceType::WhitePawn:
+    case PieceType::BlackPawn:
       generatePawnAttacks(fromSq, pawnAttacks[fromSq], oppPieces, moveList);
       break;
-    case Piece::Rook:
+    case PieceType::WhiteRook:
+    case PieceType::BlackRook:
       generateSliderAttacks(fromSq, bbFriends, true, false, moveList);
       break;
-    case Piece::Knight:
+    case PieceType::WhiteKnight:
+    case PieceType::BlackKnight:
       generateNonSliderAttacks(fromSq, mKnightAttacks[fromSq], bbFriends, moveList);
       break;
-    case Piece::Bishop:
+    case PieceType::WhiteBishop:
+    case PieceType::BlackBishop:
       generateSliderAttacks(fromSq, bbFriends, false, true, moveList);
       break;
-    case Piece::Queen:
+    case PieceType::WhiteQueen:
+    case PieceType::BlackQueen:
       generateSliderAttacks(fromSq, bbFriends, true, true, moveList);
       break;
-    case Piece::King:
+    case PieceType::WhiteKing:
+    case PieceType::BlackKing:
       generateNonSliderAttacks(fromSq, mKingAttacks[fromSq], bbFriends, moveList);
       break;
     }
-    bb &= bb-1;
-  }
-}
 
-void BitBoard::generateCastlingMoves(MoveList & moveList) const
-{
-  if (sideToMove() == Color::White) {
-    if (castlingRights() & CASTLE_WHITE_KING) {
-      if (mPieces[Square::F1] == Piece::None &&
-          mPieces[Square::G1] == Piece::None &&
-          !isCellAttacked(Square::E1, Color::Black) &&
-          !isCellAttacked(Square::F1, Color::Black) &&
-          !isCellAttacked(Square::G1, Color::Black))
-      {
-        pushMove(E1, G1, Piece::King, Piece::None, Piece::None, Move::Type::Castle, moveList);
-      }
-    }
-    if (castlingRights() & CASTLE_WHITE_QUEEN) {
-      if (mPieces[Square::D1] == Piece::None &&
-          mPieces[Square::C1] == Piece::None &&
-          mPieces[Square::B1] == Piece::None &&
-          !isCellAttacked(Square::E1, Color::Black) &&
-          !isCellAttacked(Square::D1, Color::Black) &&
-          !isCellAttacked(Square::C1, Color::Black))
-      {
-        pushMove(E1, C1, Piece::King, Piece::None, Piece::None, Move::Type::Castle, moveList);
-      }
-    }
+    pieces &= pieces-1;
   }
-  else {
-    if (castlingRights() & CASTLE_BLACK_KING) {
-      if (mPieces[Square::F8] == Piece::None &&
-          mPieces[Square::G8] == Piece::None &&
-          !isCellAttacked(Square::E8, Color::White) &&
-          !isCellAttacked(Square::F8, Color::White) &&
-          !isCellAttacked(Square::G8, Color::White))
-      {
-        pushMove(E8, G8, Piece::King, Piece::None, Piece::None, Move::Type::Castle, moveList);
-      }
-    }
-    if (castlingRights() & CASTLE_BLACK_QUEEN) {
-      if (mPieces[Square::D8] == Piece::None &&
-          mPieces[Square::C8] == Piece::None &&
-          mPieces[Square::B8] == Piece::None &&
-          !isCellAttacked(Square::E8, Color::White) &&
-          !isCellAttacked(Square::D8, Color::White) &&
-          !isCellAttacked(Square::C8, Color::White))
-      {
-        pushMove(E8, C8, Piece::King, Piece::None, Piece::None, Move::Type::Castle, moveList);
-      }
-    }
-  }
-}
-
-void BitBoard::generateMoves(MoveList & moveList) const
-{
-  // Generate the castling moves
-  generateCastlingMoves(moveList);
-
-  // Generate the pawn non capture moves
-  U64 pieces = (sideToMove() == Color::White) ? mWhitePieces : mBlackPieces;
-  if (sideToMove() == Color::White) {
-    generateWhitePawnMoves(moveList);
-  }
-  else {
-    generateBlackPawnMoves(moveList);
-  }
-
-  // Generate all attack moves
-  generateAttackMoves(pieces, moveList);
 }
 
 void BitBoard::generateBlackPawnMoves(MoveList &moveList) const
@@ -398,11 +321,10 @@ void BitBoard::generateBlackPawnMoves(MoveList &moveList) const
   while (bbMove) {
     int toSq = bitScanForward(bbMove);
     int fromSq = toSq + NORTH;
-    pushMove(fromSq, toSq, mPieces[fromSq], mPieces[toSq], Piece::Queen, Move::Type::Promotion, moveList);
-    pushMove(fromSq, toSq, mPieces[fromSq], mPieces[toSq], Piece::Rook, Move::Type::Promotion, moveList);
-    pushMove(fromSq, toSq, mPieces[fromSq], mPieces[toSq], Piece::Bishop, Move::Type::Promotion, moveList);
-    pushMove(fromSq, toSq, mPieces[fromSq], mPieces[toSq], Piece::Knight, Move::Type::Promotion, moveList);
-
+    pushMove(fromSq, toSq, PieceType::BlackPawn, PieceType::None, PieceType::BlackQueen, Move::Type::Promotion, moveList);
+    pushMove(fromSq, toSq, PieceType::BlackPawn, PieceType::None, PieceType::BlackRook, Move::Type::Promotion, moveList);
+    pushMove(fromSq, toSq, PieceType::BlackPawn, PieceType::None, PieceType::BlackBishop, Move::Type::Promotion, moveList);
+    pushMove(fromSq, toSq, PieceType::BlackPawn, PieceType::None, PieceType::BlackKnight, Move::Type::Promotion, moveList);
     bbMove &= bbMove - 1;
   }
 
@@ -412,8 +334,7 @@ void BitBoard::generateBlackPawnMoves(MoveList &moveList) const
   while (bbMove) {
     int toSq = bitScanForward(bbMove);
     int fromSq = toSq + NORTH;
-    pushMove(fromSq, toSq, mPieces[fromSq], Piece::None, Piece::None, Move::Type::Quiet, moveList);
-
+    pushMove(fromSq, toSq, PieceType::BlackPawn, PieceType::None, PieceType::None, Move::Type::Quiet, moveList);
     bbMove &= bbMove - 1;
   }
 
@@ -424,10 +345,77 @@ void BitBoard::generateBlackPawnMoves(MoveList &moveList) const
   while (bbMove) {
     int toSq = bitScanForward(bbMove);
     int fromSq = toSq + (NORTH << 1);
-    pushMove(fromSq, toSq, mPieces[fromSq], Piece::None, Piece::None, Move::Type::EpPush, moveList);
-
+    pushMove(fromSq, toSq, PieceType::BlackPawn, PieceType::None, PieceType::None, Move::Type::EpPush, moveList);
     bbMove &= bbMove - 1;
   }
+}
+
+void BitBoard::generateCastlingMoves(MoveList & moveList) const
+{
+  if (sideToMove() == Color::White) {
+    if (castlingRights() & CASTLE_WHITE_KING) {
+      if (mPieceType[Square::F1] == PieceType::None &&
+          mPieceType[Square::G1] == PieceType::None &&
+          !isCellAttacked(Square::E1, Color::Black) &&
+          !isCellAttacked(Square::F1, Color::Black) &&
+          !isCellAttacked(Square::G1, Color::Black))
+      {
+        pushMove(E1, G1, PieceType::WhiteKing, PieceType::None, PieceType::None, Move::Type::Castle, moveList);
+      }
+    }
+    if (castlingRights() & CASTLE_WHITE_QUEEN) {
+      if (mPieceType[Square::D1] == PieceType::None &&
+          mPieceType[Square::C1] == PieceType::None &&
+          mPieceType[Square::B1] == PieceType::None &&
+          !isCellAttacked(Square::E1, Color::Black) &&
+          !isCellAttacked(Square::D1, Color::Black) &&
+          !isCellAttacked(Square::C1, Color::Black))
+      {
+        pushMove(E1, C1, PieceType::WhiteKing, PieceType::None, PieceType::None, Move::Type::Castle, moveList);
+      }
+    }
+  }
+  else {
+    if (castlingRights() & CASTLE_BLACK_KING) {
+      if (mPieceType[Square::F8] == PieceType::None &&
+          mPieceType[Square::G8] == PieceType::None &&
+          !isCellAttacked(Square::E8, Color::White) &&
+          !isCellAttacked(Square::F8, Color::White) &&
+          !isCellAttacked(Square::G8, Color::White))
+      {
+        pushMove(E8, G8, PieceType::BlackKing, PieceType::None, PieceType::None, Move::Type::Castle, moveList);
+      }
+    }
+    if (castlingRights() & CASTLE_BLACK_QUEEN) {
+      if (mPieceType[Square::D8] == PieceType::None &&
+          mPieceType[Square::C8] == PieceType::None &&
+          mPieceType[Square::B8] == PieceType::None &&
+          !isCellAttacked(Square::E8, Color::White) &&
+          !isCellAttacked(Square::D8, Color::White) &&
+          !isCellAttacked(Square::C8, Color::White))
+      {
+        pushMove(E8, C8, PieceType::BlackKing, PieceType::None, PieceType::None, Move::Type::Castle, moveList);
+      }
+    }
+  }
+}
+
+void BitBoard::generateMoves(MoveList & moveList) const
+{
+  // Generate the castling moves
+  generateCastlingMoves(moveList);
+
+  // Generate the pawn non capture moves
+  if (sideToMove() == Color::White) {
+    generateWhitePawnMoves(moveList);
+  }
+  else {
+    generateBlackPawnMoves(moveList);
+  }
+
+  // Generate all attack moves
+  U64 friends = (sideToMove() == Color::White) ? mWhitePieces : mBlackPieces;
+  generateAttackMoves(friends, moveList);
 }
 
 void BitBoard::generateNonSliderAttacks(uchar fromSq, U64 bbAttack, U64 bbFriendly, MoveList & moveList) const
@@ -435,8 +423,8 @@ void BitBoard::generateNonSliderAttacks(uchar fromSq, U64 bbAttack, U64 bbFriend
   U64 bbMove = bbAttack & ~bbFriendly;
   while (bbMove) {
     uchar toSq = bitScanForward(bbMove);
-    Move::Type type = (mPieces[toSq] == Piece::None) ? Move::Type::Quiet : Move::Type::Capture;
-    pushMove(fromSq, toSq, mPieces[fromSq], mPieces[toSq], Piece::None, type, moveList);
+    Move::Type type = (mPieceType[toSq] == PieceType::None) ? Move::Type::Quiet : Move::Type::Capture;
+    pushMove(fromSq, toSq, mPieceType[fromSq], mPieceType[toSq], PieceType::None, type, moveList);
     bbMove &= bbMove-1;
   }
 }
@@ -447,25 +435,36 @@ void BitBoard::generatePawnAttacks(uchar fromSq, U64 bbAttack, U64 bbOpp, MoveLi
   while (bbMove) {
     uchar toSq = bitScanForward(bbMove);
     uchar destRow = getRow(toSq);
-    Piece capturePiece = mPieces[toSq];
-    if (destRow == BLACK_PROMOTION_ROW || destRow == WHITE_PROMOTION_ROW) { // Promotion capture
-      pushMove(fromSq, toSq, mPieces[fromSq], capturePiece, Piece::Queen, Move::Type::PromotionCapture, moveList);
-      pushMove(fromSq, toSq, mPieces[fromSq], capturePiece, Piece::Rook, Move::Type::PromotionCapture, moveList);
-      pushMove(fromSq, toSq, mPieces[fromSq], capturePiece, Piece::Bishop, Move::Type::PromotionCapture, moveList);
-      pushMove(fromSq, toSq, mPieces[fromSq], capturePiece, Piece::Knight, Move::Type::PromotionCapture, moveList);
+    PieceType capturePiece = mPieceType[toSq];
+    if (destRow == WHITE_PROMOTION_ROW) { // Promotion capture
+      pushMove(fromSq, toSq, mPieceType[fromSq], capturePiece, PieceType::WhiteQueen, Move::Type::PromotionCapture, moveList);
+      pushMove(fromSq, toSq, mPieceType[fromSq], capturePiece, PieceType::WhiteRook, Move::Type::PromotionCapture, moveList);
+      pushMove(fromSq, toSq, mPieceType[fromSq], capturePiece, PieceType::WhiteBishop, Move::Type::PromotionCapture, moveList);
+      pushMove(fromSq, toSq, mPieceType[fromSq], capturePiece, PieceType::WhiteKnight, Move::Type::PromotionCapture, moveList);
+    }
+    else if (destRow == BLACK_PROMOTION_ROW) { // Promotion capture
+      pushMove(fromSq, toSq, mPieceType[fromSq], capturePiece, PieceType::BlackQueen, Move::Type::PromotionCapture, moveList);
+      pushMove(fromSq, toSq, mPieceType[fromSq], capturePiece, PieceType::BlackRook, Move::Type::PromotionCapture, moveList);
+      pushMove(fromSq, toSq, mPieceType[fromSq], capturePiece, PieceType::BlackBishop, Move::Type::PromotionCapture, moveList);
+      pushMove(fromSq, toSq, mPieceType[fromSq], capturePiece, PieceType::BlackKnight, Move::Type::PromotionCapture, moveList);
     }
     else { // Standard capture
-      pushMove(fromSq, toSq, mPieces[fromSq], capturePiece, Piece::None, Move::Type::Capture, moveList);
+      pushMove(fromSq, toSq, mPieceType[fromSq], capturePiece, PieceType::None, Move::Type::Capture, moveList);
     }
+    bbMove &= bbMove-1;
+  }
 
-    if (epColumn() != BoardBase::INVALID_EP) { // En-passant capture
+  if (epColumn() != BoardBase::INVALID_EP) { // En-passant capture
+    U64 bbMove = bbAttack;
+    while (bbMove) {
+      uchar toSq = bitScanForward(bbMove);
       uchar epIndex = getIndex(epRow(), epColumn());
       char epDir = (sideToMove() == Color::White) ? SOUTH : NORTH;
       if (epIndex == toSq) {
-        pushMove(fromSq, toSq, Piece::Pawn, mPieces[toSq+epDir], Piece::None, Move::Type::EpCapture, moveList);
+        pushMove(fromSq, toSq, mPieceType[fromSq], mPieceType[toSq+epDir], PieceType::None, Move::Type::EpCapture, moveList);
       }
+      bbMove &= bbMove-1;
     }
-    bbMove &= bbMove-1;
   }
 }
 
@@ -477,13 +476,13 @@ void BitBoard::generateSliderAttacks(uchar fromSq, U64 bbFriends, bool straight,
 
   if (straight) {
 
-    // Generate rank attacks
+    // Rank attacks
     shift = getRow(fromSq) << 3;
     occupancy = (mAllPieces >> shift) & FullRank;
     bbMove = (mRankAttacks[fromSq][occupancy]) & ~bbFriends;
     pushBitBoardMoves(bbMove, fromSq, moveList);
 
-    // Generate file attacks
+    // File attacks
     shift = getCol(fromSq) << 3;
     occupancy = (mRotateRight90Pieces >> shift) & FullRank;
     bbMove = (mFileAttacks[fromSq][occupancy]) & ~bbFriends;
@@ -492,25 +491,17 @@ void BitBoard::generateSliderAttacks(uchar fromSq, U64 bbFriends, bool straight,
 
   if (diag) {
 
-    // Generate north east attacks
+    // North east attacks
     shift = a1h8Shifts[fromSq];
     occupancy = (mRotateRight45Pieces >> shift) & a1h8Masks[fromSq];
-    bbMove = mDiagAttacksNorthEast[fromSq][occupancy] & ~bbFriends;
+    bbMove = mNorthEastAttacks[fromSq][occupancy] & ~bbFriends;
     pushBitBoardMoves(bbMove, fromSq, moveList);
 
-    // Generate north west attacks
+    // North west attacks
     shift = a8h1Shifts[fromSq];
     occupancy = (mRotateLeft45Pieces >> shift) & a8h1Masks[fromSq];
-    bbMove = mDiagAttacksNorthWest[fromSq][occupancy] & ~bbFriends;
+    bbMove = mNorthWestAttacks[fromSq][occupancy] & ~bbFriends;
     pushBitBoardMoves(bbMove, fromSq, moveList);
-
-    if (fromSq == 65) {
-      writeBitBoard(mAllPieces, std::cout);
-      writeBitBoard(mRotateRight45Pieces, std::cout);
-      writeBitBoard((mRotateRight45Pieces >> shift), std::cout);
-      writeBitBoard(bbMove, std::cout);
-      writeOccupancy(occupancy);
-    }
   }
 }
 
@@ -524,11 +515,10 @@ void BitBoard::generateWhitePawnMoves(MoveList &moveList) const
   while (bbMove) {
     int toSq = bitScanForward(bbMove);
     int fromSq = toSq + SOUTH;
-    pushMove(fromSq, toSq, mPieces[fromSq], mPieces[toSq], Piece::Queen, Move::Type::Promotion, moveList);
-    pushMove(fromSq, toSq, mPieces[fromSq], mPieces[toSq], Piece::Rook, Move::Type::Promotion, moveList);
-    pushMove(fromSq, toSq, mPieces[fromSq], mPieces[toSq], Piece::Bishop, Move::Type::Promotion, moveList);
-    pushMove(fromSq, toSq, mPieces[fromSq], mPieces[toSq], Piece::Knight, Move::Type::Promotion, moveList);
-
+    pushMove(fromSq, toSq, PieceType::WhitePawn, PieceType::None, PieceType::WhiteQueen, Move::Type::Promotion, moveList);
+    pushMove(fromSq, toSq, PieceType::WhitePawn, PieceType::None, PieceType::WhiteRook, Move::Type::Promotion, moveList);
+    pushMove(fromSq, toSq, PieceType::WhitePawn, PieceType::None, PieceType::WhiteBishop, Move::Type::Promotion, moveList);
+    pushMove(fromSq, toSq, PieceType::WhitePawn, PieceType::None, PieceType::WhiteKnight, Move::Type::Promotion, moveList);
     bbMove &= bbMove - 1;
   }
 
@@ -538,8 +528,7 @@ void BitBoard::generateWhitePawnMoves(MoveList &moveList) const
   while (bbMove) {
     int toSq = bitScanForward(bbMove);
     int fromSq = toSq + SOUTH;
-    pushMove(fromSq, toSq, mPieces[fromSq], Piece::None, Piece::None, Move::Type::Quiet, moveList);
-
+    pushMove(fromSq, toSq, PieceType::WhitePawn, PieceType::None, PieceType::None, Move::Type::Quiet, moveList);
     bbMove &= bbMove - 1;
   }
 
@@ -550,125 +539,12 @@ void BitBoard::generateWhitePawnMoves(MoveList &moveList) const
   while (bbMove) {
     int toSq = bitScanForward(bbMove);
     int fromSq = toSq + (SOUTH << 1);
-    pushMove(fromSq, toSq, mPieces[fromSq], Piece::None, Piece::None, Move::Type::EpPush, moveList);
-
+    pushMove(fromSq, toSq, PieceType::WhitePawn, PieceType::None, PieceType::None, Move::Type::EpPush, moveList);
     bbMove &= bbMove - 1;
   }
 }
 
-void BitBoard::initNonSliderAttacks()
-{
-  static const int knightRowIncr[]    = {1, 2, 2, 1, -1, -2, -2, -1};
-  static const int knightColIncr[]    = {-2, -1, 1, 2, 2, 1, -1, -2};
-  static const int kingRowIncr[]      = {1, 1, 1, 0, -1, -1, -1, 0};
-  static const int kingColIncr[]      = {-1, 0, 1, 1, 1, 0, -1, -1};
-  static const int whitePawnRowIncr[] = {1, 1};
-  static const int whitePawnColIncr[] = {-1, 1};
-  static const int blackPawnRowIncr[] = {-1, -1};
-  static const int blackPawnColIncr[] = {-1, 1};
-
-  for (int i = 0; i < 64; i++) {
-    mKingAttacks[i] = 0ULL;
-    mKnightAttacks[i] = 0ULL;
-    mWhitePawnAttacks[i] = 0ULL;
-    mBlackPawnAttacks[i] = 0ULL;
-  }
-
-  // Precompute attacks for each square
-  for (char sourceRow = 0; sourceRow < 8; sourceRow++) {
-    for (char sourceCol = 0; sourceCol < 8; sourceCol++) {
-      uchar index = getIndex(sourceRow, sourceCol);
-
-      // White pawn attacks
-      for (int k = 0; k < 2; k++) {
-        char destRow = sourceRow + whitePawnRowIncr[k];
-        char destCol = sourceCol + whitePawnColIncr[k];
-        if (destRow >= 0 && destRow < 8 && destCol >= 0 && destCol < 8) {
-          uchar destIndex = getIndex(destRow, destCol);
-          mWhitePawnAttacks[index] |= (ONE << destIndex);
-        }
-      }
-
-      // Black pawn attacks
-      for (int k = 0; k < 2; k++) {
-        char destRow = sourceRow + blackPawnRowIncr[k];
-        char destCol = sourceCol + blackPawnColIncr[k];
-        if (destRow >= 0 && destRow < 8 && destCol >= 0 && destCol < 8) {
-          uchar destIndex = getIndex(destRow, destCol);
-          mBlackPawnAttacks[index] |= (ONE << destIndex);
-        }
-      }
-
-      // Knight attacks
-      for (char k = 0; k < 8; k++) {
-        char destRow = sourceRow + knightRowIncr[k];
-        char destCol = sourceCol + knightColIncr[k];
-        if (destRow >= 0 && destRow < 8 && destCol >= 0 && destCol < 8) {
-          uchar destIndex = getIndex(destRow, destCol);
-          mKnightAttacks[index] |= (ONE << destIndex);
-        }
-      }
-
-      // King attacks
-      for (char k = 0; k < 8; k++) {
-        char destRow = sourceRow + kingRowIncr[k];
-        char destCol = sourceCol + kingColIncr[k];
-        if (destRow >= 0 && destRow < 8 && destCol >= 0 && destCol < 8) {
-          uchar destIndex = getIndex(destRow, destCol);
-          mKingAttacks[index] |= (ONE << destIndex);
-        }
-      }
-    }
-  }
-}
-
-void BitBoard::initBoard()
-{
-  static const Piece pieces[] = { Piece::Rook, Piece::Knight, Piece::Bishop, Piece::Queen,
-                                  Piece::King, Piece::Bishop, Piece::Knight, Piece::Rook };
-
-
-  // Initialize the pieces and colors
-  for (uint index = 0; index < 64; index++) {
-    mPieces[index] = Piece::None;
-    mColors[index] = Color::None;
-  }
-
-  for (uint col = 0; col < 8; col++) {
-    mColors[getIndex(0, col)] = Color::White;
-    mColors[getIndex(1, col)] = Color::White;
-    mColors[getIndex(6, col)] = Color::Black;
-    mColors[getIndex(7, col)] = Color::Black;
-
-    mPieces[getIndex(0, col)] = pieces[col];
-    mPieces[getIndex(1, col)] = Piece::Pawn;
-    mPieces[getIndex(6, col)] = Piece::Pawn;
-    mPieces[getIndex(7, col)] = pieces[col];
-  }
-
-  mWhiteBishops = mWhiteKings = mWhiteKnights = mWhiteQueens = mWhiteRooks = mWhitePawns = 0;
-  mBlackBishops = mBlackKings = mBlackKnights = mBlackQueens = mBlackRooks = mBlackPawns = 0;
-
-  // Initialize the white bit boards
-  mWhiteBishops = 0x24ULL;
-  mWhiteKings = 0x10ULL;
-  mWhiteKnights = 0x42ULL;
-  mWhitePawns = (0xffULL) << 8ULL;
-  mWhiteQueens = 0x08ULL;
-  mWhiteRooks = 0x81ULL;
-
-  // Initialize the black bit boards
-  mBlackBishops = (0x24ULL << C64(56));
-  mBlackKings = (0x10ULL << C64(56));
-  mBlackKnights = (0x42ULL << C64(56));
-  mBlackPawns = (0xffULL << C64(48));
-  mBlackQueens = (0x08ULL << C64(56));
-  mBlackRooks = (0x81ULL << C64(56));
-
-  updateAggregateBitBoards();
-}
-
-void BitBoard::initDiagonalAttacks()
+void BitBoard::initBishopAttacks()
 {
   // North east attacks
   for (uchar index = 0; index < 64; index++) {
@@ -681,18 +557,19 @@ void BitBoard::initDiagonalAttacks()
     for (uint occupancy = 0; occupancy <= mask; occupancy++) {
       U64 bb = 0;
 
-      for (int i = row+1; i < length; i++) {
+      int start = (col > row) ? row : col;
+      for (int i = (start)+1; i < length; i++) {
         bb += (ONE << i);
         if (occupancy & (1 << i)) break;
       }
 
-      for (int i = row-1; i >= 0; i--) {
+      for (int i = (start)-1; i >= 0; i--) {
         bb += (ONE << i);
         if (occupancy & (1 << i)) break;
       }
 
       U64 bbRot = invRotateR45(bb << shift);
-      mDiagAttacksNorthEast[index][occupancy] = bbRot;
+      mNorthEastAttacks[index][occupancy] = bbRot;
     }
   }
 
@@ -707,136 +584,141 @@ void BitBoard::initDiagonalAttacks()
     for (uint occupancy = 0; occupancy <= mask; occupancy++) {
       U64 bb = 0;
 
-      for (int i = (col)+1; i < length; i++) {
+      int start = (row > (7-col)) ? (7-row) : col;
+      for (int i = start+1; i < length; i++) {
         bb += (ONE << i);
         if (occupancy & (1 << i)) break;
       }
 
-      for (int i = (col)-1; i >= 0; i--) {
+      for (int i = start-1; i >= 0; i--) {
         bb += (ONE << i);
         if (occupancy & (1 << i)) break;
       }
 
       U64 bbRot = invRotateL45(bb << shift);
-      mDiagAttacksNorthWest[index][occupancy] = bbRot;
+      mNorthWestAttacks[index][occupancy] = bbRot;
     }
   }
-
-
-  uchar index = 58;
-  //U64 friends = mWhitePieces;
-  //U64 friends = mBlackPieces;
-  U64 friends = 0;
-  friends |= (ONE << C8);
-  friends |= (ONE << D7);
-  friends |= (ONE << E6);
-  friends |= (ONE << F5);
-  friends |= (ONE << G4);
-  friends |= (ONE << H3);
-//  friends |= (ONE << G1);
-//  friends |= (ONE << H1);
-//  friends |= (ONE << A2);
-//  friends |= (ONE << B2);
-//  friends |= (ONE << C2);
-//  friends |= (ONE << D2);
-//  friends |= (ONE << E2);
-//  friends |= (ONE << F2);
-//  friends |= (ONE << G2);
-//  friends |= (ONE << H2);
-
-  uchar row = getRow(index);
-  uchar col = getCol(index);
-
-  uchar shift = a8h1Shifts[index];
-  uchar mask = a8h1Masks[index];
-  //uchar shift = a1h8Shifts[index];
-  //uchar mask = a1h8Masks[index];
-
-  std::cout << "Pieces\n";
-  writeBitBoard(friends, std::cout);
-
-  std::cout << "Rotate 45\n";
-  U64 bbRot = rotateL45(friends);
-  writeBitBoard(bbRot, std::cout);
-
-  std::cout << "Shifted\n";
-  U64 bbShift = bbRot >> shift;
-  writeBitBoard(bbShift, std::cout);
-
-  uint occupancy = bbShift & mask;
-  writeOccupancy(occupancy); std::cout << "\n";
-
-  std::cout << "Attacks\n";
-  U64 attackBB = mDiagAttacksNorthWest[index][occupancy] & ~friends;
-  writeBitBoard(attackBB, std::cout);
-
-  //MoveList m;
-  //generateSliderAttacks(5, friends, false, true, m);
-  //m.print(std::cout);
-  exit(1);
-
-  //  U64 attacks[64][256];
-
-  //  uchar index = 18;
-  //  uchar row = getRow(index);
-  //  uchar col = getCol(index);
-
-  //  uchar shift = a1h8Shifts[index];
-  //  uchar mask = a1h8Masks[index];
-  //  uchar length = a1h8Lengths[index];
-
-  //  uint occupancy = 0;
-  //  occupancy += (1 << B1);
-  //  occupancy += (1 << F1);
-
-  //  std::cout << "Occupancy\n";
-  //  writeOccupancy(occupancy); std::cout << "\n";
-
-  //  U64 bb = 0;
-  //  for (int i = col+1; i < length; i++) {
-  //    bb += (ONE << i);
-  //    if (occupancy & (1 << i)) break;
-  //  }
-  //  for (int i = col-1; i >= 0; i--) {
-  //    bb += (ONE << i);
-  //    if (occupancy & (1 << i)) break;
-  //  }
-
-  //  std::cout << "Occupancy BB\n";
-  //  writeBitBoard(bb, std::cout);
-
-  //  std::cout << "Occupancy BB Shifted\n";
-  //  U64 bbShift = bb << shift;
-  //  writeBitBoard(bbShift, std::cout);
-
-  //  std::cout << "Occupancy BB Rotate\n";
-  //  U64 bbRot = rotateL45(bbShift);
-  //  writeBitBoard(bbRot, std::cout);
-  //  attacks[index][occupancy] = bbRot;
-
-  //  U64 pieces = 0;
-  //  pieces += (ONE << B2);
-  //  pieces += (ONE << F6);
-
-  //  std::cout << "Pieces\n";
-  //  writeBitBoard(pieces, std::cout);
-
-  //  std::cout << "Pieces Rotated\n";
-  //  U64 piecesRot = rotateR45(pieces);
-  //  writeBitBoard(piecesRot, std::cout);
-
-  //  std::cout << "Pieces Shifted\n";
-  //  U64 piecesShift = piecesRot >> shift;
-  //  writeBitBoard(piecesShift, std::cout);
-
-  //  uint occ = piecesShift & mask;
-  //  U64 attackBB = attacks[index][occ];
-  //  std::cout << "Attacks\n";
-  //  writeBitBoard(attackBB, std::cout);
-
 }
 
-void BitBoard::initStraightAttacks()
+void BitBoard::initBlackPawnAttacks()
+{
+  static const int blackPawnRowIncr[] = {-1, -1};
+  static const int blackPawnColIncr[] = {-1, 1};
+
+  // Precompute attacks for each square
+  for (char sourceRow = 0; sourceRow < 8; sourceRow++) {
+    for (char sourceCol = 0; sourceCol < 8; sourceCol++) {
+      uchar index = getIndex(sourceRow, sourceCol);
+      mBlackPawnAttacks[index] = 0ULL;
+
+      for (int k = 0; k < 2; k++) {
+        char destRow = sourceRow + blackPawnRowIncr[k];
+        char destCol = sourceCol + blackPawnColIncr[k];
+        if (destRow >= 0 && destRow < 8 && destCol >= 0 && destCol < 8) {
+          uchar destIndex = getIndex(destRow, destCol);
+          mBlackPawnAttacks[index] |= (ONE << destIndex);
+        }
+      }
+    }
+  }
+}
+
+void BitBoard::initBoard()
+{
+  // Initialize the pieces and colors
+  for (uint index = 0; index < 64; index++) {
+    mPieceType[index] = PieceType::None;
+  }
+
+  for (uint col = 0; col < 8; col++) {
+    mPieceType[getIndex(1, col)] = PieceType::WhitePawn;
+    mPieceType[getIndex(6, col)] = PieceType::BlackPawn;
+  }
+
+  // Initialize white piece types
+  mPieceType[getIndex(0, 0)] = mPieceType[getIndex(0, 7)] = PieceType::WhiteRook;
+  mPieceType[getIndex(0, 1)] = mPieceType[getIndex(0, 6)] = PieceType::WhiteKnight;
+  mPieceType[getIndex(0, 2)] = mPieceType[getIndex(0, 5)] = PieceType::WhiteBishop;
+  mPieceType[getIndex(0, 3)] = PieceType::WhiteQueen;
+  mPieceType[getIndex(0, 4)] = PieceType::WhiteKing;
+
+  // Initialize black piece types
+  mPieceType[getIndex(7, 0)] = mPieceType[getIndex(7, 7)] = PieceType::BlackRook;
+  mPieceType[getIndex(7, 1)] = mPieceType[getIndex(7, 6)] = PieceType::BlackKnight;
+  mPieceType[getIndex(7, 2)] = mPieceType[getIndex(7, 5)] = PieceType::BlackBishop;
+  mPieceType[getIndex(7, 3)] = PieceType::BlackQueen;
+  mPieceType[getIndex(7, 4)] = PieceType::BlackKing;
+
+  // Initialize the white bit boards
+  mWhiteBishops = mWhiteKings = mWhiteKnights = mWhiteQueens = mWhiteRooks = mWhitePawns = 0;
+  mWhiteBishops = 0x24ULL;
+  mWhiteKings = 0x10ULL;
+  mWhiteKnights = 0x42ULL;
+  mWhitePawns = (0xffULL) << 8ULL;
+  mWhiteQueens = 0x08ULL;
+  mWhiteRooks = 0x81ULL;
+
+  // Initialize the black bit boards
+  mBlackBishops = mBlackKings = mBlackKnights = mBlackQueens = mBlackRooks = mBlackPawns = 0;
+  mBlackBishops = (0x24ULL << C64(56));
+  mBlackKings = (0x10ULL << C64(56));
+  mBlackKnights = (0x42ULL << C64(56));
+  mBlackPawns = (0xffULL << C64(48));
+  mBlackQueens = (0x08ULL << C64(56));
+  mBlackRooks = (0x81ULL << C64(56));
+
+  // Update the aggregate bit boards
+  updateAggregateBitBoards();
+}
+
+void BitBoard::initKingAttacks()
+{
+  static const int kingRowIncr[]      = {1, 1, 1, 0, -1, -1, -1, 0};
+  static const int kingColIncr[]      = {-1, 0, 1, 1, 1, 0, -1, -1};
+
+  // Precompute attacks for each square
+  for (char sourceRow = 0; sourceRow < 8; sourceRow++) {
+    for (char sourceCol = 0; sourceCol < 8; sourceCol++) {
+      uchar index = getIndex(sourceRow, sourceCol);
+      mKingAttacks[index] = 0ULL;
+
+      for (char k = 0; k < 8; k++) {
+        char destRow = sourceRow + kingRowIncr[k];
+        char destCol = sourceCol + kingColIncr[k];
+        if (destRow >= 0 && destRow < 8 && destCol >= 0 && destCol < 8) {
+          uchar destIndex = getIndex(destRow, destCol);
+          mKingAttacks[index] |= (ONE << destIndex);
+        }
+      }
+    }
+  }
+}
+
+void BitBoard::initKnightAttacks()
+{
+  static const int knightRowIncr[]    = {1, 2, 2, 1, -1, -2, -2, -1};
+  static const int knightColIncr[]    = {-2, -1, 1, 2, 2, 1, -1, -2};
+
+  // Precompute attacks for each square
+  for (char sourceRow = 0; sourceRow < 8; sourceRow++) {
+    for (char sourceCol = 0; sourceCol < 8; sourceCol++) {
+      uchar index = getIndex(sourceRow, sourceCol);
+      mKnightAttacks[index] = 0ULL;
+
+      for (char k = 0; k < 8; k++) {
+        char destRow = sourceRow + knightRowIncr[k];
+        char destCol = sourceCol + knightColIncr[k];
+        if (destRow >= 0 && destRow < 8 && destCol >= 0 && destCol < 8) {
+          uchar destIndex = getIndex(destRow, destCol);
+          mKnightAttacks[index] |= (ONE << destIndex);
+        }
+      }
+    }
+  }
+}
+
+void BitBoard::initRookAttacks()
 {
   // Rank attacks
   for (int col = 0; col < 8; col++) {
@@ -887,6 +769,28 @@ void BitBoard::initStraightAttacks()
   }
 }
 
+void BitBoard::initWhitePawnAttacks()
+{
+  static const int whitePawnRowIncr[] = {1, 1};
+  static const int whitePawnColIncr[] = {-1, 1};
+
+  // Precompute attacks for each square
+  for (char sourceRow = 0; sourceRow < 8; sourceRow++) {
+    for (char sourceCol = 0; sourceCol < 8; sourceCol++) {
+      uchar index = getIndex(sourceRow, sourceCol);
+      mWhitePawnAttacks[index] = 0ULL;
+
+      for (int k = 0; k < 2; k++) {
+        char destRow = sourceRow + whitePawnRowIncr[k];
+        char destCol = sourceCol + whitePawnColIncr[k];
+        if (destRow >= 0 && destRow < 8 && destCol >= 0 && destCol < 8) {
+          uchar destIndex = getIndex(destRow, destCol);
+          mWhitePawnAttacks[index] |= (ONE << destIndex);
+        }
+      }
+    }
+  }
+}
 
 bool BitBoard::isCellAttacked(uchar row, uchar col, Color attackingColor) const
 {
@@ -904,60 +808,144 @@ void BitBoard::makeMove(const Move & move)
   Color side = sideToMove();
   uchar fromSquare = getIndex(move.sourceRow(), move.sourceCol());
   uchar toSquare = getIndex(move.destRow(), move.destCol());
+  PieceType fromPiece = mPieceType[fromSquare];
+  PieceType toPiece = mPieceType[toSquare];
 
   // Calculate required bitboards
   U64 bbFrom = (ONE << fromSquare);
   U64 bbTo = (ONE << toSquare);
   U64 bbFromTo = bbFrom ^ bbTo;
 
-  // Update bit boards associated with the move
-  U64 & pawns = (side == Color::White) ? mWhitePawns : mBlackPawns;
-  U64 & rooks = (side == Color::White) ? mWhiteRooks : mBlackRooks;
-  U64 & bishops = (side == Color::White) ? mWhiteBishops : mBlackBishops;
-  U64 & knights = (side == Color::White) ? mWhiteKnights : mBlackKnights;
-  U64 & queens = (side == Color::White) ? mWhiteQueens : mBlackQueens;
-  U64 & kings = (side == Color::White) ? mWhiteKings : mBlackKings;
-  switch (move.piece()) {
-  case Piece::Pawn:
-    pawns ^= bbFromTo;
-    break;
-  case Piece::Rook:
-    rooks ^= bbFromTo;
-    break;
-  case Piece::Knight:
-    knights ^= bbFromTo;
-    break;
-  case Piece::Bishop:
-    bishops ^= bbFromTo;
-    break;
-  case Piece::Queen:
-    queens ^= bbFromTo;
-    break;
-  case Piece::King:
-    kings ^= bbFromTo;
-    break;
+  // Update the color and piece arrays
+  mPieceType[fromSquare] = PieceType::None;
+  mPieceType[toSquare] = fromPiece;
+
+  // Handle non promotion moves
+  if (!move.isPromotion() && !move.isPromotionCapture()) {
+    switch (fromPiece) {
+      case PieceType::WhitePawn:
+        mWhitePawns ^= bbFromTo;
+        break;
+      case PieceType::WhiteBishop:
+        mWhiteBishops ^= bbFromTo;
+        break;
+      case PieceType::WhiteQueen:
+        mWhiteQueens ^= bbFromTo;
+        break;
+      case PieceType::WhiteKnight:
+        mWhiteKnights ^= bbFromTo;
+        break;
+      case PieceType::WhiteKing:
+        mWhiteKings ^= bbFromTo;
+        break;
+      case PieceType::WhiteRook:
+        mWhiteRooks ^= bbFromTo;
+        break;
+      case PieceType::BlackPawn:
+        mBlackPawns ^= bbFromTo;
+        break;
+      case PieceType::BlackBishop:
+        mBlackBishops ^= bbFromTo;
+        break;
+      case PieceType::BlackQueen:
+        mBlackQueens ^= bbFromTo;
+        break;
+      case PieceType::BlackKnight:
+        mBlackKnights ^= bbFromTo;
+        break;
+      case PieceType::BlackKing:
+        mBlackKings ^= bbFromTo;
+        break;
+      case PieceType::BlackRook:
+        mBlackRooks ^= bbFromTo;
+        break;
+    }
   }
 
-  // Update the color and piece arrays
-  mColors[fromSquare] = Color::None;
-  mPieces[fromSquare] = Piece::None;
-  mColors[toSquare] = side;
-  mPieces[toSquare] = move.piece();
+  // Handle captures
+  if (move.isCapture() && !move.isEpCapture()) {
+    switch (toPiece) {
+      case PieceType::WhitePawn:
+        mWhitePawns ^= (ONE << toSquare);
+        break;
+      case PieceType::WhiteBishop:
+        mWhiteBishops ^= (ONE << toSquare);
+        break;
+      case PieceType::WhiteQueen:
+        mWhiteQueens ^= (ONE << toSquare);
+        break;
+      case PieceType::WhiteKnight:
+        mWhiteKnights ^= (ONE << toSquare);
+        break;
+      case PieceType::WhiteKing:
+        mWhiteKings ^= (ONE << toSquare);
+        break;
+      case PieceType::WhiteRook:
+        mWhiteRooks ^= (ONE << toSquare);
+        break;
+      case PieceType::BlackPawn:
+        mBlackPawns ^= (ONE << toSquare);
+        break;
+      case PieceType::BlackBishop:
+        mBlackBishops ^= (ONE << toSquare);
+        break;
+      case PieceType::BlackQueen:
+        mBlackQueens ^= (ONE << toSquare);
+        break;
+      case PieceType::BlackKnight:
+        mBlackKnights ^= (ONE << toSquare);
+        break;
+      case PieceType::BlackKing:
+        mBlackKings ^= (ONE << toSquare);
+        break;
+      case PieceType::BlackRook:
+        mBlackRooks ^= (ONE << toSquare);
+        break;
+    }
+  }
 
   // Handle enPassant captures
-  // May need to update bitboards here
   if (move.isEpCapture()) {
     char dir = (side == Color::White) ? SOUTH : NORTH;
+    U64 & oppPawns = (side == Color::White) ? mBlackPawns : mWhitePawns;
     uchar sq = toSquare + dir;
-    mPieces[sq] = Piece::None;
-    mColors[sq] = Color::None;
+    mPieceType[sq] = PieceType::None;
+    oppPawns ^= (ONE << sq);
   }
 
   // Handle promotions
-  // May need to update bitboards here
-  if (move.isPromotion() || move.isPromotionCapture()) {
-    mPieces[toSquare] = move.promotedPiece();
-  }
+//  if (move.isPromotion() || move.isPromotionCapture()) {
+
+//    // Get bit boards
+//    U64 & pawns = (side == Color::White) ? mWhitePawns : mBlackPawns;
+//    U64 & queens = (side == Color::White) ? mWhiteQueens : mBlackQueens;
+//    U64 & rooks = (side == Color::White) ? mWhiteRooks : mBlackRooks;
+//    U64 & knights = (side == Color::White) ? mWhiteKnights : mBlackKnights;
+//    U64 & bishops = (side == Color::White) ? mWhiteBishops : mBlackBishops;
+
+//    // Remove the pawn
+//    pawns ^= (ONE << fromSquare);
+
+//    // Update the piece type array and the bit boards
+//    switch (move.promotedPiece()) {
+//      case Piece::Queen:
+//        mPieceType[toSquare] = (side == Color::White) ? PieceType::WhiteQueen : PieceType::BlackQueen;
+//        queens ^= (ONE << toSquare);
+//        break;
+//      case Piece::Rook:
+//        mPieceType[toSquare] = (side == Color::White) ? PieceType::WhiteRook : PieceType::BlackRook;
+//        rooks ^= (ONE << toSquare);
+//        break;
+//      case Piece::Bishop:
+//        mPieceType[toSquare] = (side == Color::White) ? PieceType::WhiteBishop : PieceType::BlackBishop;
+//        bishops ^= (ONE << toSquare);
+//        break;
+//      case Piece::Knight:
+//        mPieceType[toSquare] = (side == Color::White) ? PieceType::WhiteKnight : PieceType::BlackKnight;
+//        knights ^= (ONE << toSquare);
+//        break;
+//    }
+//  }
 
   // Handle king move
   if (move.piece() == Piece::King) {
@@ -1018,35 +1006,35 @@ void BitBoard::makeMove(const Move & move)
     break;
   }
 
-  // May need to update bitboards here
-  if (move.isCastle()) {
-    switch (toSquare) {
-    case C1:
-      mPieces[D1] = Piece::Rook;
-      mColors[D1] = Color::White;
-      mPieces[A1] = Piece::None;
-      mColors[A1] = Color::None;
-      break;
-    case G1:
-      mPieces[F1] = Piece::Rook;
-      mColors[F1] = Color::White;
-      mPieces[H1] = Piece::None;
-      mColors[H1] = Color::None;
-      break;
-    case C8:
-      mPieces[D8] = Piece::Rook;
-      mColors[D8] = Color::Black;
-      mPieces[A8] = Piece::None;
-      mColors[A8] = Color::None;
-      break;
-    case G8:
-      mPieces[F8] = Piece::Rook;
-      mColors[F8] = Color::Black;
-      mPieces[H8] = Piece::None;
-      mColors[H8] = Color::None;
-      break;
-    }
-  }
+  // Handle castle move
+//  if (move.isCastle()) {
+//    switch (toSquare) {
+//    case C1:
+//      mPieceType[D1] = PieceType::WhiteRook;
+//      mPieceType[A1] = PieceType::None;
+//      mWhiteRooks ^= (ONE << D1);
+//      mWhiteRooks ^= (ONE << A1);
+//      break;
+//    case G1:
+//      mPieceType[F1] = PieceType::WhiteRook;
+//      mPieceType[H1] = PieceType::None;
+//      mWhiteRooks ^= (ONE << F1);
+//      mWhiteRooks ^= (ONE << H1);
+//      break;
+//    case C8:
+//      mPieceType[D8] = PieceType::BlackRook;
+//      mPieceType[A8] = PieceType::None;
+//      mBlackRooks ^= (ONE << D8);
+//      mBlackRooks ^= (ONE << A8);
+//      break;
+//    case G8:
+//      mPieceType[F8] = PieceType::BlackRook;
+//      mPieceType[H8] = PieceType::None;
+//      mBlackRooks ^= (ONE << F8);
+//      mBlackRooks ^= (ONE << H8);
+//      break;
+//    }
+//  }
 
   // Set the castling rights
   setCastlingRights(castling);
@@ -1059,9 +1047,7 @@ void BitBoard::makeMove(const Move & move)
   // Update the aggregate bitboards
   updateAggregateBitBoards();
 
-  //writeBitBoard(mWhitePieces, std::cout);
-  //writeBitBoard(mBlackPieces, std::cout);
-
+  // Switch sides
   toggleSideToMove();
 }
 
@@ -1079,22 +1065,22 @@ void BitBoard::pushBitBoardMoves(U64 bb, uchar fromSq, MoveList & moveList) cons
 {
   while (bb) {
     int toSq = bitScanForward(bb);
-    Piece capturePiece = mPieces[toSq];
-    Move::Type type = (capturePiece == Piece::None) ? Move::Type::Quiet : Move::Type::Capture;
-    pushMove(fromSq, toSq, mPieces[fromSq], capturePiece, Piece::None, type, moveList);
-    bb &= bb - 1;
+    PieceType capturePiece = mPieceType[toSq];
+    Move::Type type = (capturePiece == PieceType::None) ? Move::Type::Quiet : Move::Type::Capture;
+    pushMove(fromSq, toSq, mPieceType[fromSq], capturePiece, PieceType::None, type, moveList);
+    bb &= bb-1;
   }
 }
 
-void BitBoard::pushMove(uchar from, uchar to, Piece piece, Piece capture, Piece promote, Move::Type type, MoveList & moveList) const
+void BitBoard::pushMove(uchar from, uchar to, PieceType piece, PieceType capture, PieceType promote, Move::Type type, MoveList & moveList) const
 {
-  Move move(getRow(from), getCol(from), getRow(to), getCol(to), piece);
+  Move move(getRow(from), getCol(from), getRow(to), getCol(to), typeToPiece(piece));
   move.setCastlingRights(castlingRights());
   move.setHalfMoveClock(halfMoveClock());
   move.setFullMoveCounter(fullMoveCounter());
   move.setType(type);
-  move.setCapturedPiece(capture);
-  move.setPromotedPiece(promote);
+  move.setCapturedPiece(typeToPiece(capture));
+  move.setPromotedPiece(typeToPiece(promote));
   move.setEnpassantColumn(epColumn());
 
   moveList.addMove(move);
@@ -1102,35 +1088,7 @@ void BitBoard::pushMove(uchar from, uchar to, Piece piece, Piece capture, Piece 
 
 PieceType BitBoard::pieceType(uchar row, uchar col) const
 {
-  uchar index = getIndex(row, col);
-  Piece piece = mPieces[index];
-  Color color = mColors[index];
-
-  PieceType type = PieceType::None;
-  switch (piece) {
-  case Piece::Pawn:
-    type = (color == Color::White) ? PieceType::WhitePawn : PieceType::BlackPawn;
-    break;
-  case Piece::Rook:
-    type = (color == Color::White) ? PieceType::WhiteRook : PieceType::BlackRook;
-    break;
-  case Piece::Knight:
-    type = (color == Color::White) ? PieceType::WhiteKnight : PieceType::BlackKnight;
-    break;
-  case Piece::Bishop:
-    type = (color == Color::White) ? PieceType::WhiteBishop : PieceType::BlackBishop;
-    break;
-  case Piece::Queen:
-    type = (color == Color::White) ? PieceType::WhiteQueen : PieceType::BlackQueen;
-    break;
-  case Piece::King:
-    type = (color == Color::White) ? PieceType::WhiteKing : PieceType::BlackKing;
-    break;
-  default:
-    break;
-  }
-
-  return type;
+  return mPieceType[getIndex(row, col)];
 }
 
 BitBoard::U64 BitBoard::invRotateL45(U64 bb) const
@@ -1161,13 +1119,6 @@ BitBoard::U64 BitBoard::rotateR90(U64 bb) const
       symmBB |= (ONE << index);
 
   return symmBB;
-
-//  U64 symmBB = 0;
-//  for (uint index = 0; index < 64; index++)
-//    if (bb & (ONE << index))
-//      symmBB |= (ONE << rotR90Matrix[index]);
-
-//  return symmBB;
 }
 
 BitBoard::U64 BitBoard::rotateL90(U64 bb) const
@@ -1182,50 +1133,22 @@ BitBoard::U64 BitBoard::rotateL90(U64 bb) const
 
 BitBoard::U64 BitBoard::rotateL45(U64 bb) const
 {
-//  U64 symmBB = 0;
-//  for (uint index = 0; index < 64; index++)
-//    if (bb & (ONE << index))
-//      symmBB += (ONE << rotateL45Matrix[index]);
-
-//  return symmBB;
-
   U64 symmBB = 0;
   for (uint index = 0; index < 64; index++)
     if (bb & (ONE << rotateL45Matrix[index]))
       symmBB += (ONE << index);
 
   return symmBB;
-
-//  U64 symmBB = 0;
-//  for (uint index = 0; index < 64; index++)
-//    if (bb & (ONE << index))
-//      symmBB |= (ONE << rotMatrix[index]);
-
-//  return symmBB;
 }
 
 BitBoard::U64 BitBoard::rotateR45(U64 bb) const
 {
-//  U64 symmBB = 0;
-//  for (uint index = 0; index < 64; index++)
-//    if (bb & (ONE << index))
-//      symmBB += (ONE << rotR45Matrix[index]);
-
-//  return symmBB;
-
   U64 symmBB = 0;
   for (uint index = 0; index < 64; index++)
     if (bb & (ONE << rotateR45Matrix[index]))
       symmBB += (ONE << index);
 
   return symmBB;
-
-//  U64 symmBB = 0;
-//  for (uint index = 0; index < 64; index++)
-//    if (bb & (ONE << rotMatrix[index]))
-//      symmBB |= (ONE << index);
-
-//  return symmBB;
 }
 
 void BitBoard::setPosition(const std::string & fenString)
@@ -1263,82 +1186,92 @@ void BitBoard::setPosition(const std::string & fenString)
     for (uchar col = 0; col < 8; col++) {
       PieceType type = fenData.pieceType(row, col);
       uchar sq = getIndex(row, col);
-      ulonglong bb = ONE << sq;
+      ulonglong bb = (ONE << sq);
+
+      mPieceType[sq] = type;
       switch (type) {
       case PieceType::WhitePawn:
-        mPieces[sq] = Piece::Pawn;
-        mColors[sq] = Color::White;
         mWhitePawns |= bb;
         break;
       case PieceType::WhiteRook:
-        mPieces[sq] = Piece::Rook;
-        mColors[sq] = Color::White;
         mWhiteRooks |= bb;
         break;
       case PieceType::WhiteKnight:
-        mPieces[sq] = Piece::Knight;
-        mColors[sq] = Color::White;
         mWhiteKnights |= bb;
         break;
       case PieceType::WhiteBishop:
-        mPieces[sq] = Piece::Bishop;
-        mColors[sq] = Color::White;
         mWhiteBishops |= bb;
         break;
       case PieceType::WhiteQueen:
-        mPieces[sq] = Piece::Queen;
-        mColors[sq] = Color::White;
         mWhiteQueens |= bb;
         break;
       case PieceType::WhiteKing:
-        mPieces[sq] = Piece::King;
-        mColors[sq] = Color::White;
         mWhiteKings |= bb;
         setKingRow(Color::White, row);
         setKingColumn(Color::White, col);
         break;
       case PieceType::BlackPawn:
-        mPieces[sq] = Piece::Pawn;
-        mColors[sq] = Color::Black;
         mBlackPawns |= bb;
         break;
       case PieceType::BlackRook:
-        mPieces[sq] = Piece::Rook;
-        mColors[sq] = Color::Black;
         mBlackRooks |= bb;
         break;
       case PieceType::BlackKnight:
-        mPieces[sq] = Piece::Knight;
-        mColors[sq] = Color::Black;
         mBlackKnights |= bb;
         break;
       case PieceType::BlackBishop:
-        mPieces[sq] = Piece::Bishop;
-        mColors[sq] = Color::Black;
         mBlackBishops |= bb;
         break;
       case PieceType::BlackQueen:
-        mPieces[sq] = Piece::Queen;
-        mColors[sq] = Color::Black;
         mBlackQueens |= bb;
         break;
       case PieceType::BlackKing:
-        mPieces[sq] = Piece::King;
-        mColors[sq] = Color::Black;
         setKingRow(Color::Black, row);
         setKingColumn(Color::Black, col);
         mBlackKings |= bb;
         break;
       default:
-        mPieces[sq] = Piece::None;
-        mColors[sq] = Color::None;
         break;
       }
     }
   }
 
-  // Initialize aggregate bitboards
+  // Update aggregate bitboards
   updateAggregateBitBoards();
+}
+
+Piece BitBoard::typeToPiece(PieceType type) const
+{
+  Piece piece = Piece::None;
+
+  switch (type) {
+    case PieceType::WhiteBishop:
+    case PieceType::BlackBishop:
+      piece = Piece::Bishop;
+      break;
+    case PieceType::WhiteKing:
+    case PieceType::BlackKing:
+      piece = Piece::King;
+      break;
+    case PieceType::WhiteKnight:
+    case PieceType::BlackKnight:
+      piece = Piece::Knight;
+      break;
+    case PieceType::WhitePawn:
+    case PieceType::BlackPawn:
+      piece = Piece::Pawn;
+      break;
+    case PieceType::WhiteQueen:
+    case PieceType::BlackQueen:
+      piece = Piece::Queen;
+      break;
+    case PieceType::WhiteRook:
+    case PieceType::BlackRook:
+      piece = Piece::Rook;
+      break;
+  }
+
+  return piece;
 }
 
 void BitBoard::unmakeMove(const Move & move)
@@ -1348,6 +1281,7 @@ void BitBoard::unmakeMove(const Move & move)
   Piece piece = move.piece();
   uchar fromSquare = getIndex(move.sourceRow(), move.sourceCol());
   uchar toSquare = getIndex(move.destRow(), move.destCol());
+  PieceType toPiece = mPieceType[toSquare];
 
   // Calculate required bitboards
   U64 bbFrom = (ONE << fromSquare);
@@ -1361,41 +1295,51 @@ void BitBoard::unmakeMove(const Move & move)
   setEpColumn(move.enPassantCol());
 
   // Update the piece and color tables
-  mPieces[fromSquare] = piece;
-  mColors[fromSquare] = !side;
-  mPieces[toSquare] = Piece::None;
-  mColors[toSquare] = Color::None;
+  mPieceType[fromSquare] = toPiece;
+  mPieceType[toSquare] = PieceType::None;
 
-  // Update bit boards associated with the move
-  U64 & pawns = (side == Color::Black) ? mWhitePawns : mBlackPawns;
-  U64 & rooks = (side == Color::Black) ? mWhiteRooks : mBlackRooks;
-  U64 & bishops = (side == Color::Black) ? mWhiteBishops : mBlackBishops;
-  U64 & knights = (side == Color::Black) ? mWhiteKnights : mBlackKnights;
-  U64 & queens = (side == Color::Black) ? mWhiteQueens : mBlackQueens;
-  U64 & kings = (side == Color::Black) ? mWhiteKings : mBlackKings;
-  switch (move.piece()) {
-  case Piece::Pawn:
-    pawns ^= bbFromTo;
-    break;
-  case Piece::Rook:
-    rooks ^= bbFromTo;
-    break;
-  case Piece::Knight:
-    knights ^= bbFromTo;
-    break;
-  case Piece::Bishop:
-    bishops ^= bbFromTo;
-    break;
-  case Piece::Queen:
-    queens ^= bbFromTo;
-    break;
-  case Piece::King:
-    kings ^= bbFromTo;
-    break;
+  if (!move.isPromotion() && !move.isPromotionCapture()) {
+    switch (toPiece) {
+      case PieceType::WhitePawn:
+        mWhitePawns ^= bbFromTo;
+        break;
+      case PieceType::WhiteBishop:
+        mWhiteBishops ^= bbFromTo;
+        break;
+      case PieceType::WhiteQueen:
+        mWhiteQueens ^= bbFromTo;
+        break;
+      case PieceType::WhiteKnight:
+        mWhiteKnights ^= bbFromTo;
+        break;
+      case PieceType::WhiteKing:
+        mWhiteKings ^= bbFromTo;
+        break;
+      case PieceType::WhiteRook:
+        mWhiteRooks ^= bbFromTo;
+        break;
+      case PieceType::BlackPawn:
+        mBlackPawns ^= bbFromTo;
+        break;
+      case PieceType::BlackBishop:
+        mBlackBishops ^= bbFromTo;
+        break;
+      case PieceType::BlackQueen:
+        mBlackQueens ^= bbFromTo;
+        break;
+      case PieceType::BlackKnight:
+        mBlackKnights ^= bbFromTo;
+        break;
+      case PieceType::BlackKing:
+        mBlackKings ^= bbFromTo;
+        break;
+      case PieceType::BlackRook:
+        mBlackRooks ^= bbFromTo;
+        break;
+    }
   }
 
   // Handle captures
-  // May need to update bitboards here
   if (move.isCapture()) {
     uchar sq = toSquare;
     if (move.isEpCapture()) {
@@ -1403,15 +1347,66 @@ void BitBoard::unmakeMove(const Move & move)
       sq = toSquare + dir;
     }
 
-    mPieces[sq] = move.capturePiece();
-    mColors[sq] = side;
+    U64 & pawns = (side == Color::White) ? mWhitePawns : mBlackPawns;
+    U64 & rooks = (side == Color::White) ? mWhiteRooks : mBlackRooks;
+    U64 & queens = (side == Color::White) ? mWhiteQueens : mBlackQueens;
+    U64 & kings = (side == Color::White) ? mWhiteKings : mBlackKings;
+    U64 & knights = (side == Color::White) ? mWhiteKnights : mBlackKnights;
+    U64 & bishops = (side == Color::White) ? mWhiteBishops : mBlackBishops;
+    switch (move.capturePiece()) {
+      case Piece::Pawn:
+        mPieceType[sq] = (side == Color::White) ? PieceType::WhitePawn : PieceType::BlackPawn;
+        pawns ^= (ONE << sq);
+        break;
+      case Piece::Bishop:
+        mPieceType[sq] = (side == Color::White) ? PieceType::WhiteBishop : PieceType::BlackBishop;
+        bishops ^= (ONE << sq);
+        break;
+      case Piece::Queen:
+        mPieceType[sq] = (side == Color::White) ? PieceType::WhiteQueen : PieceType::BlackQueen;
+        queens ^= (ONE << sq);
+        break;
+      case Piece::King:
+        mPieceType[sq] = (side == Color::White) ? PieceType::WhiteKing : PieceType::BlackKing;
+        kings ^= (ONE << sq);
+        break;
+      case Piece::Rook:
+        mPieceType[sq] = (side == Color::White) ? PieceType::WhiteRook : PieceType::BlackRook;
+        rooks ^= (ONE << sq);
+        break;
+      case Piece::Knight:
+        mPieceType[sq] = (side == Color::White) ? PieceType::WhiteKnight : PieceType::BlackKnight;
+        knights ^= (ONE << sq);
+        break;
+    }
   }
 
   // Handle promotions
-  // May need to update bitboards here
-  if (move.isPromotion() || move.isPromotionCapture()) {
-    mPieces[fromSquare] = Piece::Pawn;
-  }
+//  if (move.isPromotion() || move.isPromotionCapture()) {
+//    mPieceType[fromSquare] = (side == Color::White) ? PieceType::BlackPawn : PieceType::WhitePawn;
+
+//    U64 & pawns = (side == Color::Black) ? mWhitePawns : mBlackPawns;
+//    U64 & rooks = (side == Color::Black) ? mWhiteRooks : mBlackRooks;
+//    U64 & queens = (side == Color::Black) ? mWhiteQueens : mBlackQueens;
+//    U64 & knights = (side == Color::Black) ? mWhiteKnights : mBlackKnights;
+//    U64 & bishops = (side == Color::Black) ? mWhiteBishops : mBlackBishops;
+
+//    pawns ^= (ONE << fromSquare);
+//    switch (move.promotedPiece()) {
+//      case Piece::Queen:
+//        queens ^= (ONE << toSquare);
+//        break;
+//      case Piece::Bishop:
+//        bishops ^= (ONE << toSquare);
+//        break;
+//      case Piece::Rook:
+//        rooks ^= (ONE << toSquare);
+//        break;
+//      case Piece::Knight:
+//        knights ^= (ONE << toSquare);
+//        break;
+//    }
+//  }
 
   // Handle king moves
   if (piece == Piece::King) {
@@ -1420,39 +1415,39 @@ void BitBoard::unmakeMove(const Move & move)
   }
 
   // Handle castling move
-  // May need to update bitboards here
-  if (move.isCastle()) {
-    switch (toSquare) {
-    case C1:
-      mPieces[A1] = Piece::Rook;
-      mColors[A1] = Color::White;
-      mPieces[D1] = Piece::None;
-      mColors[D1] = Color::None;
-      break;
-    case G1:
-      mPieces[H1] = Piece::Rook;
-      mColors[H1] = Color::White;
-      mPieces[F1] = Piece::None;
-      mColors[F1] = Color::None;
-      break;
-    case C8:
-      mPieces[A8] = Piece::Rook;
-      mColors[A8] = Color::Black;
-      mPieces[D8] = Piece::None;
-      mColors[D8] = Color::None;
-      break;
-    case G8:
-      mPieces[H8] = Piece::Rook;
-      mColors[H8] = Color::Black;
-      mPieces[F8] = Piece::None;
-      mColors[F8] = Color::None;
-      break;
-    }
-  }
+//  if (move.isCastle()) {
+//    switch (toSquare) {
+//    case C1:
+//      mPieceType[A1] = PieceType::WhiteRook;
+//      mPieceType[D1] = PieceType::None;
+//      mWhiteRooks ^= (ONE << A1);
+//      mWhiteRooks ^= (ONE << D1);
+//      break;
+//    case G1:
+//      mPieceType[H1] = PieceType::WhiteRook;
+//      mPieceType[F1] = PieceType::None;
+//      mWhiteRooks ^= (ONE << H1);
+//      mWhiteRooks ^= (ONE << F1);
+//      break;
+//    case C8:
+//      mPieceType[A8] = PieceType::BlackRook;
+//      mPieceType[D8] = PieceType::None;
+//      mBlackRooks ^= (ONE << A8);
+//      mBlackRooks ^= (ONE << D8);
+//      break;
+//    case G8:
+//      mPieceType[H8] = PieceType::BlackRook;
+//      mPieceType[F8] = PieceType::None;
+//      mBlackRooks ^= (ONE << H8);
+//      mBlackRooks ^= (ONE << F8);
+//      break;
+//    }
+//  }
 
   // Update the aggregate bitboards
   updateAggregateBitBoards();
 
+  // Switch sides
   toggleSideToMove();
 }
 
@@ -1466,7 +1461,6 @@ void BitBoard::updateAggregateBitBoards()
   mRotateRight90Pieces = rotateR90(mAllPieces);
   mRotateRight45Pieces = rotateR45(mAllPieces);
   mRotateLeft45Pieces = rotateL45(mAllPieces);
-  //mRotateLeft90Pieces = rotateL90(mAllPieces);
 }
 
 void BitBoard::writeBitBoard(U64 bitboard, std::ostream & output) const
@@ -1514,6 +1508,22 @@ void BitBoard::writeBitBoard(U64 bitboard, std::ostream & output) const
   std::cout << "\n\n";
 }
 
+void BitBoard::writeBoards() const
+{
+  //writeBitBoard(mWhitePawns, std::cout);
+  //writeBitBoard(mWhiteRooks, std::cout);
+  //writeBitBoard(mWhiteKnights, std::cout);
+  //writeBitBoard(mWhiteBishops, std::cout);
+  //writeBitBoard(mWhiteQueens, std::cout);
+  //writeBitBoard(mWhiteKings, std::cout);
+  //writeBitBoard(mBlackPawns, std::cout);
+  //writeBitBoard(mBlackRooks, std::cout);
+  //writeBitBoard(mBlackKnights, std::cout);
+  //writeBitBoard(mBlackBishops, std::cout);
+  //writeBitBoard(mBlackQueens, std::cout);
+  //writeBitBoard(mBlackKings, std::cout);
+}
+
 void BitBoard::writeOccupancy(uint occupancy, bool flip) const
 {
 	std::ostringstream oss;
@@ -1536,3 +1546,117 @@ void BitBoard::writeOccupancy(uint occupancy, bool flip) const
 
 	std::cout << oss.str() << "\n";
 }
+
+//uchar index = 2;
+//U64 friends = mWhitePieces;
+//U64 friends = mBlackPieces;
+//  U64 friends = 0;
+//  friends |= (ONE << A2);
+//  friends |= (ONE << B3);
+//friends |= (ONE << C4);
+//  friends |= (ONE << D5);
+//  friends |= (ONE << E6);
+//  friends |= (ONE << F7);
+//friends |= (ONE << G8);
+//friends |= (ONE << H8);
+
+//  friends |= (ONE << G1);
+//  friends |= (ONE << H1);
+//  friends |= (ONE << A2);
+//  friends |= (ONE << B2);
+//  friends |= (ONE << C2);
+//  friends |= (ONE << D2);
+//  friends |= (ONE << E2);
+//  friends |= (ONE << F2);
+//  friends |= (ONE << G2);
+//  friends |= (ONE << H2);
+
+//  uchar row = getRow(index);
+//  uchar col = getCol(index);
+
+//  //uchar shift = a8h1Shifts[index];
+//  //uchar mask = a8h1Masks[index];
+//  uchar shift = a1h8Shifts[index];
+//  uchar mask = a1h8Masks[index];
+
+//  std::cout << "Pieces\n";
+//  writeBitBoard(friends, std::cout);
+
+//  std::cout << "Rotate 45\n";
+//  U64 bbRot = rotateR45(friends);
+//  writeBitBoard(bbRot, std::cout);
+
+//  std::cout << "Shifted\n";
+//  U64 bbShift = bbRot >> shift;
+//  writeBitBoard(bbShift, std::cout);
+
+//  uint occupancy = bbShift & mask;
+//  writeOccupancy(occupancy); std::cout << "\n";
+
+//  std::cout << "Attacks\n";
+//  U64 attackBB = mNorthEastAttacks[index][occupancy] & ~friends;
+//  writeBitBoard(attackBB, std::cout);
+
+//MoveList m;
+//generateSliderAttacks(5, friends, false, true, m);
+//m.print(std::cout);
+//exit(1);
+
+//  U64 attacks[64][256];
+
+//  uchar index = 18;
+//  uchar row = getRow(index);
+//  uchar col = getCol(index);
+
+//  uchar shift = a1h8Shifts[index];
+//  uchar mask = a1h8Masks[index];
+//  uchar length = a1h8Lengths[index];
+
+//  uint occupancy = 0;
+//  occupancy += (1 << B1);
+//  occupancy += (1 << F1);
+
+//  std::cout << "Occupancy\n";
+//  writeOccupancy(occupancy); std::cout << "\n";
+
+//  U64 bb = 0;
+//  for (int i = col+1; i < length; i++) {
+//    bb += (ONE << i);
+//    if (occupancy & (1 << i)) break;
+//  }
+//  for (int i = col-1; i >= 0; i--) {
+//    bb += (ONE << i);
+//    if (occupancy & (1 << i)) break;
+//  }
+
+//  std::cout << "Occupancy BB\n";
+//  writeBitBoard(bb, std::cout);
+
+//  std::cout << "Occupancy BB Shifted\n";
+//  U64 bbShift = bb << shift;
+//  writeBitBoard(bbShift, std::cout);
+
+//  std::cout << "Occupancy BB Rotate\n";
+//  U64 bbRot = rotateL45(bbShift);
+//  writeBitBoard(bbRot, std::cout);
+//  attacks[index][occupancy] = bbRot;
+
+//  U64 pieces = 0;
+//  pieces += (ONE << B2);
+//  pieces += (ONE << F6);
+
+//  std::cout << "Pieces\n";
+//  writeBitBoard(pieces, std::cout);
+
+//  std::cout << "Pieces Rotated\n";
+//  U64 piecesRot = rotateR45(pieces);
+//  writeBitBoard(piecesRot, std::cout);
+
+//  std::cout << "Pieces Shifted\n";
+//  U64 piecesShift = piecesRot >> shift;
+//  writeBitBoard(piecesShift, std::cout);
+
+//  uint occ = piecesShift & mask;
+//  U64 attackBB = attacks[index][occ];
+//  std::cout << "Attacks\n";
+//  writeBitBoard(attackBB, std::cout);

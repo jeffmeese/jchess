@@ -9,7 +9,6 @@ set(JCHESS_BUILD_TYPE STATIC)
 set(JCHESS_SOURCES
     alphabetasearch.cpp
     bitboard.cpp
-    board.cpp
     board0x88.cpp
     board8x8.cpp
     boardbase.cpp

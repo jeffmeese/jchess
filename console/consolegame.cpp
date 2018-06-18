@@ -215,7 +215,7 @@ void ConsoleGame::handleSinglePlayer()
 
 void ConsoleGame::handleTestMoveGen() const
 {
-  std::string fileName("C:\\Users\\jmeese\\Documents\\work\\code\\development\\applications\\jchess\\source\\jchess\\data\\perftsuite.epd");
+  std::string fileName("perftsuite.epd");
   std::ifstream inputStream(fileName.c_str());
   if (inputStream.fail()) {
     std::cout << "Could not locate perft test file " << fileName << "\n";
