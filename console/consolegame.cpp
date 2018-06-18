@@ -71,6 +71,11 @@ void ConsoleGame::handleDivide(std::istringstream & iss) const
 
   Perft perft(mBoard);
   perft.divide(perftLevel);
+
+  //BitBoard * b = dynamic_cast<BitBoard*>(mBoard);
+  //if (b != nullptr) {
+  //  b->writeTimers();
+  //}
 }
 
 void ConsoleGame::handleEngine()
