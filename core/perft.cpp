@@ -3,7 +3,7 @@
 #include "board.h"
 #include "move.h"
 #include "movelist.h"
-#include "timer.h"
+#include "plf_nanotimer.h"
 
 #include <iostream>
 #include <iomanip>
@@ -18,12 +18,13 @@ Perft::Perft(Board * board)
 
 void Perft::divide(uint perftDepth)
 {
-  Timer timer;
+  mGenMoveTime = mCellAttackTime = mMakeMoveTime = mUnmakeMoveTime = mKingTime = 0;
+
+  plf::nanotimer timer;
   timer.start();
 
   MoveList moveList;
   mBoard->generateMoves(moveList);
-
   uint validMoves = 0;
   ulonglong totalNodes = 0;
   for (uint i = 0; i < moveList.size(); i++) {
@@ -33,22 +34,20 @@ void Perft::divide(uint perftDepth)
     bool attacked = mBoard->isCellAttacked(kingRow, kingCol, mBoard->sideToMove());
     if (!attacked) {
       ulonglong nodes = executePerft(perftDepth - 1);
-
-      //std::string moveString = moveList[i].toSmithNotation();
-     // std::cout << moveString << ": " << nodes << "\n";
-
+      std::string moveString = moveList[i].toSmithNotation();
+      std::cout << moveString << ": " << nodes << "\n";
       totalNodes += nodes;
       validMoves++;
     }
+
     mBoard->unmakeMove(moveList[i]);
   }
 
-  timer.stop();
   std::cout << "\n";
   std::cout << "Moves: " << validMoves << "\n";
   std::cout << "Nodes: " << totalNodes << "\n";
   std::cout << std::endl;
-  std::cout << "Total time elapsed: " << timer.elapsed()/1e3 << " milliseconds" << std::endl;
+  std::cout << "Total time elapsed  : " << timer.get_elapsed_ms() << " milliseconds" << std::endl;
 }
 
 ulonglong Perft::execute(uint perftDepth)
@@ -71,8 +70,9 @@ ulonglong Perft::executePerft(uint perftDepth)
     uchar kingRow = mBoard->kingRow(!mBoard->sideToMove());
     uchar kingCol = mBoard->kingColumn(!mBoard->sideToMove());
     bool attacked = mBoard->isCellAttacked(kingRow, kingCol, mBoard->sideToMove());
-    if (!attacked)
+    if (!attacked) {
       totalNodes += executePerft(perftDepth-1);
+    }
     mBoard->unmakeMove(moveList[i]);
   }
 

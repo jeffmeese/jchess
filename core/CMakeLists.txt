@@ -9,6 +9,7 @@ set(JCHESS_BUILD_TYPE STATIC)
 set(JCHESS_SOURCES
     alphabetasearch.cpp
     bitboard.cpp
+    bitboard1.cpp
     board0x88.cpp
     board8x8.cpp
     boardbase.cpp
@@ -29,6 +30,7 @@ set(JCHESS_SOURCES
 set(JCHESS_HEADERS
     alphabetasearch.h
     bitboard.h
+    bitboard1.h
     board.h
     board0x88.h
     board8x8.h
@@ -42,6 +44,7 @@ set(JCHESS_HEADERS
     movelist.h
     negamaxsearch.h
     perft.h
+    plf_nanotimer.h
     search.h
     timer.h
     types.h

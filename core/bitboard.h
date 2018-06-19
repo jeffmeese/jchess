@@ -3,11 +3,7 @@
 
 #include "boardbase.h"
 #include "move.h"
-#include "timer.h"
-
-#include <iostream>
-
-class MoveList;
+#include "movelist.h"
 
 class BitBoard
     : public BoardBase
@@ -22,21 +18,21 @@ public:
   bool isCellAttacked(uchar row, uchar col, Color attackingColor) const;
   void makeMove(const Move & move);
   PieceType pieceType(uchar row, uchar col) const;
-  void resetTimers();
   void setPosition(const std::string & fenString);
   void unmakeMove(const Move & move);
-  void writeTimers() const;
 
   // Internal definitions
 private:
-  typedef ulonglong U64;
+  typedef unsigned long long u64;
 
+  // Side to move
   enum Side
   {
     White = 0,
     Black = 1
   };
 
+  // Enumeration so that we can hold the bit boards in arrays
   enum Type
   {
     WhitePieces = 0,
@@ -53,63 +49,68 @@ private:
     BlackQueen = 11,
     WhiteKing = 12,
     BlackKing = 13,
-    None = 14
+    None = 14,
+    All = 15
+  };
+
+  // Undo struct for easy retrieval of rotated bitboards
+  struct Undo
+  {
+    u64 rotate90;
+    u64 rotateR45;
+    u64 rotateL45;
   };
 
   // Implementation
 private:
-  uchar bitScanForward(U64 bb) const;
-  uchar bitScanForwardPopCount(U64 bb) const;
-  void generateJumpAttacks(U64 piece, const U64 * attacks, U64 friends, MoveList & moveList) const;
-  void generateSlideAttacks(U64 piece, const U64 attacks[][256], U64 friends, U64 pieces, const uint * shifts, const uint * masks, MoveList & moveList) const;
-  void generatePawnAttacks(U64 piece, const U64 * attacks, U64 enemies, MoveList & moveList) const;
+  uchar bitScanForward(u64 bb) const;
   void generateBlackPawnMoves(MoveList & moveList) const;
   void generateCastlingMoves(MoveList & moveList) const;
+  void generateJumpAttacks(u64 piece, const u64 * attacks, u64 friends, MoveList & moveList) const;
+  void generatePawnAttacks(u64 piece, const u64 * attacks, u64 enemies, MoveList & moveList) const;
+  void generateSlideAttacks(u64 piece, const u64 attacks[][256], u64 friends, u64 pieces, const uint * shifts, const uint * masks, MoveList & moveList) const;
   void generateWhitePawnMoves(MoveList & moveList) const;
-  void pushBitBoardMoves(U64 bb, uchar fromSq, MoveList & moveList) const;
-  void initBlackPawnAttacks();
+  void init();
   void initBoard();
+  void initAttacks();
+  void initBishopAttacks();
   void initKingAttacks();
   void initKnightAttacks();
-  void initBishopAttacks();
+  void initPawnAttacks(Side side, char rowIncr);
   void initRookAttacks();
-  void initWhitePawnAttacks();
+  u64 invRotateL45(u64 bb) const;
+  u64 invRotateR45(u64 bb) const;
   bool isCellAttacked(uchar index, Color attackingColor) const;
-  U64 invRotateL45(U64 bb) const;
-  U64 invRotateR45(U64 bb) const;
-  uchar popCount(U64 x) const;
+  void pushBitBoardMoves(u64 bb, uchar fromSq, MoveList & moveList) const;
   void pushMove(uchar from, uchar to, Type piece, Type capture, Type promote, Move::Type type, MoveList & moveList) const;
-  U64 rotateL90(U64 bb) const;
-  U64 rotateR90(U64 bb) const;
-  U64 rotateL45(U64 bb) const;
-  U64 rotateR45(U64 bb) const;
+  u64 rotateL90(u64 bb) const;
+  u64 rotateR90(u64 bb) const;
+  u64 rotateL45(u64 bb) const;
+  u64 rotateR45(u64 bb) const;
   void updateAggregateBitBoards();
-  void writeBitBoard(U64 bitboard, std::ostream & output) const;
+  void updateRotatedBitBoards();
+  void writeBitBoard(u64 bb, std::ostream & output = std::cout) const;
   void writeOccupancy(uint occupancy, bool flip = false) const;
 
-  // Members
 private:
-  U64 mAllPieces;                  //! Bitboard for all pieces
-  U64 mEmptySquares;               //! Bitboard for empty squares
-  U64 mRotateLeft45Pieces;         //! Bitboard of pieces rotated along a8h1 diagonal
-  U64 mRotateRight45Pieces;        //! Bitboard of pieces rotated along a1h8 diagonal
-  U64 mRotateRight90Pieces;        //! Bitboard of pieces rotated along files
-  Side mSide;                      //! Side to move
-  U64 mPieceBB[15];                //! Bitboard for each type of piece indexed by Type enum
+  Side mSide;
+  uint mUndoPos;
+  u64 mRotateL45;
+  u64 mRotateR45;
+  u64 mRotateR90;
+  u64 mPiece[16];
+  Type mType[64];
   Piece mTypeToPiece[15];          //! Table of Type to Piece
-  Type mType[64];                  //! Piece types for quick lookup
-  U64 mKingAttacks[64];            //! Attack bitboards for kings for each square
-  U64 mKnightAttacks[64];          //! Attack bitboards for knights for each square
-  U64 mPawnAttacks[2][64];         //! Attack bitboards for pawns on each square
-  U64 mFileAttacks[64][256];       //! Attack bitboards along files for all occupanies
-  U64 mNorthEastAttacks[64][256];  //! Attack bitboards along a1h8 diagonal for all occupanies
-  U64 mNorthWestAttacks[64][256];  //! Attack bitboards along a8h1 diagonal for all occupanies
-  U64 mRankAttacks[64][256];       //! Attack bitboards along ranks for all occupanies
-  mutable Timer mMakeMoveTimer;
-  mutable Timer mGenMoveTimer;
-  mutable Timer mUnmakeMoveTimer;
-  mutable Timer mCellAttackTimer;
-  mutable Timer mRotateTimer;
+  u64 mKingAttacks[64];
+  u64 mKnightAttacks[64];
+  u64 mMask[64];
+  u64 mInvMask[64];
+  u64 mPawnAttacks[2][64];
+  u64 mFileAttacks[64][256];
+  u64 mNorthEastAttacks[64][256];
+  u64 mNorthWestAttacks[64][256];
+  u64 mRankAttacks[64][256];
+  Undo mUndoStack[1000];
 };
 
 #endif // BITBOARD_H

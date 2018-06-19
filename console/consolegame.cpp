@@ -67,21 +67,12 @@ int ConsoleGame::getMoveIndex(uchar srcRow, uchar srcCol, uchar dstRow, uchar ds
 
 void ConsoleGame::handleDivide(std::istringstream & iss) const
 {
-  BitBoard * b = dynamic_cast<BitBoard*>(mBoard);
-  if (b != nullptr) {
-    b->resetTimers();
-  }
-
   uint perftLevel = readLevel(iss);
   if (perftLevel == 0)
     return;
 
   Perft perft(mBoard);
   perft.divide(perftLevel);
-
-  if (b != nullptr) {
-    b->writeTimers();
-  }
 }
 
 void ConsoleGame::handleEngine()

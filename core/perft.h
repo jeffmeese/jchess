@@ -43,6 +43,11 @@ private:
   ulonglong mTotalCheckmates;
   ulonglong mTotalEnpassants;
   ulonglong mTotalPromotions;
+  double mGenMoveTime;
+  double mCellAttackTime;
+  double mMakeMoveTime;
+  double mUnmakeMoveTime;
+  double mKingTime;
 };
 
 #endif // PERFT_H

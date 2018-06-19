@@ -58,21 +58,25 @@ inline void Timer::stop()
   mStarted = false;
 }
 
+#include "plf_nanotimer.h"
+
 class TimerHolder
 {
 public:
-  TimerHolder(Timer & timer)
-    : mTimer(timer)
+  TimerHolder(double & time)
+    : mTime(time)
   {
     mTimer.start();
   }
 
   ~TimerHolder()
   {
-    mTimer.stop();
+    mTime += mTimer.get_elapsed_ms();
   }
+
 private:
-  Timer & mTimer;
+  double & mTime;
+  plf::nanotimer mTimer;
 };
 
 #endif // TIMER_H
