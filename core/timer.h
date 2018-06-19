@@ -24,6 +24,40 @@ private:
   bool mStarted;
 };
 
+inline double Timer::elapsed() const
+{ return mElapsed; }
+
+inline void Timer::reset()
+{
+  mElapsed = 0.0;
+  mStarted = false;
+}
+
+inline void Timer::restart()
+{
+  reset();
+  start();
+}
+
+inline void Timer::start()
+{
+  if (mStarted)
+    return;
+
+  mStart = clock::now();
+  mStarted = true;
+}
+
+inline void Timer::stop()
+{
+  if (!mStarted)
+    return;
+
+  time_point current = clock::now();
+  mElapsed += std::chrono::duration_cast<std::chrono::microseconds>(current-mStart).count();
+  mStarted = false;
+}
+
 class TimerHolder
 {
 public:

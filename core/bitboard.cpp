@@ -300,7 +300,7 @@ BitBoard::BitBoard()
  * @precondition bb != 0
  * @return index (0..63) of least significant one bit
  */
-uchar BitBoard::bitScanForward(U64 bb) const
+inline uchar BitBoard::bitScanForward(U64 bb) const
 {
   //ulong index = 0;
   //_BitScanForward64(&index, bb);
@@ -322,7 +322,7 @@ void BitBoard::generateBlackPawnMoves(MoveList &moveList) const
   U64 promoMask = C64(255);
 
   // Promotion moves
-  bbMove = (mPieceBB[BlackPawn] << 8) & promoMask & mEmptySquares;
+  bbMove = (mPieceBB[BlackPawn] >> 8) & promoMask & mEmptySquares;
   while (bbMove) {
     int toSq = bitScanForward(bbMove);
     int fromSq = toSq + NORTH;
@@ -408,6 +408,7 @@ void BitBoard::generateCastlingMoves(MoveList & moveList) const
 void BitBoard::generateMoves(MoveList & moveList) const
 {
   //TimerHolder holder(mGenMoveTimer);
+  mGenMoveTimer.start();
 
   // Get the bitboards for the pieces on the side to move
   U64 pawns = mPieceBB[WhitePawn + mSide];
@@ -443,6 +444,8 @@ void BitBoard::generateMoves(MoveList & moveList) const
   generateSlideAttacks(queens, mFileAttacks, friends, mRotateRight90Pieces, fileShifts, fileMasks, moveList);
   generateSlideAttacks(queens, mNorthEastAttacks, friends, mRotateRight45Pieces, a1h8Shifts, a1h8Masks, moveList);
   generateSlideAttacks(queens, mNorthWestAttacks, friends, mRotateLeft45Pieces, a8h1Shifts, a8h1Masks, moveList);
+
+  mGenMoveTimer.stop();
 }
 
 void BitBoard::generateJumpAttacks(U64 piece, const U64 * attacks, U64 friends, MoveList & moveList) const
@@ -833,6 +836,8 @@ bool BitBoard::isCellAttacked(uchar row, uchar col, Color attackingColor) const
 
 bool BitBoard::isCellAttacked(uchar index, Color attackingColor) const
 {
+  TimerHolder holder(mCellAttackTimer);
+
   Side bySide = (attackingColor == Color::White) ? White : Black;
 
   U64 pawns = mPieceBB[WhitePawn + bySide];
@@ -849,9 +854,6 @@ bool BitBoard::isCellAttacked(uchar index, Color attackingColor) const
 
   uint shift = 0;
   uint occupancy = 0;
-  //U64 rooks = mPieceBB[WhiteRook + bySide];
-  //U64 bishops = mPieceBB[WhiteBishop + bySide];
-  //U64 queens = mPieceBB[WhiteQueen + bySide];
   U64 bishopsQueens = mPieceBB[WhiteBishop + bySide] | mPieceBB[WhiteQueen + bySide];
   U64 rooksQueens = mPieceBB[WhiteRook + bySide] | mPieceBB[WhiteQueen + bySide];
 
@@ -875,32 +877,12 @@ bool BitBoard::isCellAttacked(uchar index, Color attackingColor) const
   if (mNorthWestAttacks[index][occupancy] & bishopsQueens)
     return true;
 
-  //shift = rankShifts[index];
-  //occupancy = (mAllPieces >> shift) & rankMasks[index];
-  //if (mRankAttacks[index][occupancy] & queens)
-  //  return true;
-
-  //shift = fileShifts[index];
-  //occupancy = (mRotateRight90Pieces >> shift) & fileMasks[index];
-  //if (mFileAttacks[index][occupancy] & queens)
-  //  return true;
-
-  //shift = a1h8Shifts[index];
-  //occupancy = (mRotateRight45Pieces >> shift) & a1h8Masks[index];
-  //if (mNorthEastAttacks[index][occupancy] & queens)
-  //  return true;
-
-  //shift = a8h1Shifts[index];
-  //occupancy = (mRotateLeft45Pieces >> shift) & a8h1Masks[index];
-  //if (mNorthWestAttacks[index][occupancy] & queens)
-  //  return true;
-
   return false;
 }
 
 void BitBoard::makeMove(const Move & move)
 {
-  //TimerHolder holder(mMakeMoveTimer);
+  TimerHolder holder(mMakeMoveTimer);
 
   // Get move information
   Color side = sideToMove();
@@ -933,7 +915,7 @@ void BitBoard::makeMove(const Move & move)
     char dir = (side == Color::White) ? SOUTH : NORTH;
     uchar sq = toSquare + dir;
     mType[sq] = Type::None;
-    mPieceBB[!mSide] ^= (ONE << sq);
+    mPieceBB[WhitePawn + !mSide] &= ~(ONE << sq);
   }
 
   // Handle king move
@@ -1155,12 +1137,21 @@ BitBoard::U64 BitBoard::invRotateR45(U64 bb) const
   return symmBB;
 }
 
-BitBoard::U64 BitBoard::rotateR90(U64 bb) const
+void BitBoard::resetTimers()
+{
+  mCellAttackTimer.reset();
+  mGenMoveTimer.reset();
+  mMakeMoveTimer.reset();
+  mUnmakeMoveTimer.reset();
+  mRotateTimer.reset();
+}
+
+BitBoard::U64 BitBoard::rotateL45(U64 bb) const
 {
   U64 symmBB = 0;
   for (uint index = 0; index < 64; index++)
-    if (bb & (ONE << rotR90Matrix[index]))
-      symmBB |= (ONE << index);
+    if (bb & (ONE << rotateL45Matrix[index]))
+      symmBB += (ONE << index);
 
   return symmBB;
 }
@@ -1175,22 +1166,22 @@ BitBoard::U64 BitBoard::rotateL90(U64 bb) const
   return symmBB;
 }
 
-BitBoard::U64 BitBoard::rotateL45(U64 bb) const
-{
-  U64 symmBB = 0;
-  for (uint index = 0; index < 64; index++)
-    if (bb & (ONE << rotateL45Matrix[index]))
-      symmBB += (ONE << index);
-
-  return symmBB;
-}
-
 BitBoard::U64 BitBoard::rotateR45(U64 bb) const
 {
   U64 symmBB = 0;
   for (uint index = 0; index < 64; index++)
     if (bb & (ONE << rotateR45Matrix[index]))
       symmBB += (ONE << index);
+
+  return symmBB;
+}
+
+BitBoard::U64 BitBoard::rotateR90(U64 bb) const
+{
+  U64 symmBB = 0;
+  for (uint index = 0; index < 64; index++)
+    if (bb & (ONE << rotR90Matrix[index]))
+      symmBB |= (ONE << index);
 
   return symmBB;
 }
@@ -1301,7 +1292,7 @@ void BitBoard::setPosition(const std::string & fenString)
 
 void BitBoard::unmakeMove(const Move & move)
 {
-  //TimerHolder holder(mUnmakeMoveTimer);
+  TimerHolder holder(mUnmakeMoveTimer);
 
   // Get move information
   Color side = sideToMove();
@@ -1416,9 +1407,6 @@ void BitBoard::unmakeMove(const Move & move)
   // Switch sides
   mSide = static_cast<Side>(!mSide);
   toggleSideToMove();
-
-  //writeBitBoard(mPieceBB[WhitePawn], std::cout);
-  //writeBitBoard(mPieceBB[BlackPawn], std::cout);
 }
 
 void BitBoard::updateAggregateBitBoards()
@@ -1429,6 +1417,7 @@ void BitBoard::updateAggregateBitBoards()
 
   mAllPieces = mPieceBB[0] | mPieceBB[1];
   mEmptySquares = ~mAllPieces;
+  TimerHolder holder(mRotateTimer);
   mRotateRight90Pieces = rotateR90(mAllPieces);
   mRotateRight45Pieces = rotateR45(mAllPieces);
   mRotateLeft45Pieces = rotateL45(mAllPieces);
@@ -1500,4 +1489,13 @@ void BitBoard::writeOccupancy(uint occupancy, bool flip) const
   }
 
 	std::cout << oss.str() << "\n";
+}
+
+void BitBoard::writeTimers() const
+{
+	std::cout << "Gen Move      :" << mGenMoveTimer.elapsed()/1e3 << " milliseconds\n";
+	std::cout << "Make Move     :" << mMakeMoveTimer.elapsed()/1e3 << " milliseconds\n";
+	std::cout << "Unmake Move   :" << mUnmakeMoveTimer.elapsed()/1e3 << " milliseconds\n";
+	std::cout << "Cell Attack   :" << mCellAttackTimer.elapsed()/1e3 << " milliseconds\n";
+	std::cout << "Rotate        :" << mRotateTimer.elapsed()/1e3 << " milliseconds\n";
 }

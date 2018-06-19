@@ -1,7 +1,6 @@
 #ifndef BOARD0X88_H
 #define BOARD0X88_H
 
-//#include "board.h"
 #include "boardbase.h"
 #include "move.h"
 #include "types.h"

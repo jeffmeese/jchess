@@ -10,6 +10,8 @@
 #include "types.h"
 #include "util.h"
 
+#include "bitboard.h"
+
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -65,6 +67,11 @@ int ConsoleGame::getMoveIndex(uchar srcRow, uchar srcCol, uchar dstRow, uchar ds
 
 void ConsoleGame::handleDivide(std::istringstream & iss) const
 {
+  BitBoard * b = dynamic_cast<BitBoard*>(mBoard);
+  if (b != nullptr) {
+    b->resetTimers();
+  }
+
   uint perftLevel = readLevel(iss);
   if (perftLevel == 0)
     return;
@@ -72,10 +79,9 @@ void ConsoleGame::handleDivide(std::istringstream & iss) const
   Perft perft(mBoard);
   perft.divide(perftLevel);
 
-  //BitBoard * b = dynamic_cast<BitBoard*>(mBoard);
-  //if (b != nullptr) {
-  //  b->writeTimers();
-  //}
+  if (b != nullptr) {
+    b->writeTimers();
+  }
 }
 
 void ConsoleGame::handleEngine()

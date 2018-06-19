@@ -22,8 +22,10 @@ public:
   bool isCellAttacked(uchar row, uchar col, Color attackingColor) const;
   void makeMove(const Move & move);
   PieceType pieceType(uchar row, uchar col) const;
+  void resetTimers();
   void setPosition(const std::string & fenString);
   void unmakeMove(const Move & move);
+  void writeTimers() const;
 
   // Internal definitions
 private:
@@ -103,6 +105,11 @@ private:
   U64 mNorthEastAttacks[64][256];  //! Attack bitboards along a1h8 diagonal for all occupanies
   U64 mNorthWestAttacks[64][256];  //! Attack bitboards along a8h1 diagonal for all occupanies
   U64 mRankAttacks[64][256];       //! Attack bitboards along ranks for all occupanies
+  mutable Timer mMakeMoveTimer;
+  mutable Timer mGenMoveTimer;
+  mutable Timer mUnmakeMoveTimer;
+  mutable Timer mCellAttackTimer;
+  mutable Timer mRotateTimer;
 };
 
 #endif // BITBOARD_H

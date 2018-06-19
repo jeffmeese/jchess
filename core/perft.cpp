@@ -31,12 +31,11 @@ void Perft::divide(uint perftDepth)
     uchar kingRow = mBoard->kingRow(!mBoard->sideToMove());
     uchar kingCol = mBoard->kingColumn(!mBoard->sideToMove());
     bool attacked = mBoard->isCellAttacked(kingRow, kingCol, mBoard->sideToMove());
-    //std::cout << moveList[i].toSmithNotation() << " " << attacked << "\n";
     if (!attacked) {
       ulonglong nodes = executePerft(perftDepth - 1);
 
-      std::string moveString = moveList[i].toSmithNotation();
-      std::cout << moveString << ": " << nodes << "\n";
+      //std::string moveString = moveList[i].toSmithNotation();
+     // std::cout << moveString << ": " << nodes << "\n";
 
       totalNodes += nodes;
       validMoves++;
@@ -71,7 +70,8 @@ ulonglong Perft::executePerft(uint perftDepth)
     mBoard->makeMove(moveList[i]);
     uchar kingRow = mBoard->kingRow(!mBoard->sideToMove());
     uchar kingCol = mBoard->kingColumn(!mBoard->sideToMove());
-    if (!mBoard->isCellAttacked(kingRow, kingCol, mBoard->sideToMove()))
+    bool attacked = mBoard->isCellAttacked(kingRow, kingCol, mBoard->sideToMove());
+    if (!attacked)
       totalNodes += executePerft(perftDepth-1);
     mBoard->unmakeMove(moveList[i]);
   }

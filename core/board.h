@@ -2,7 +2,7 @@
 #define BOARD_H
 
 //#define USE_BOARD8x8
-#define USE_BITBOARD
+//#define USE_BITBOARD
 
 #if defined(USE_BOARD8x8)
 #include "board8x8.h"
