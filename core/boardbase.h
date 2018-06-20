@@ -56,7 +56,7 @@ public:
   void decrementHalfMoveClock();
   void incrementFullMoveCounter();
   void incrementHalfMoveClock();
-  void print(std::ostream & output) const;
+  void print(std::ostream & output = std::cout) const;
   void toggleSideToMove();
   std::string writeFenString() const;
 
