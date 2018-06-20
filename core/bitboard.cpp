@@ -23,95 +23,26 @@ static const unsigned long long WHITE_PROMOTION_MASK = (c64(255));
 static const unsigned long long BLACK_PROMOTION_MASK = (c64(255) << 56);
 
 // Pawn offsets
-static const char NORTH          = +8;
-static const char SOUTH          = -8;
-static const char WHITE_ROW_INCR = +1;
-static const char BLACK_ROW_INCR = -1;
+static const char NORTH          = -8;
+static const char SOUTH          = +8;
+static const char WHITE_ROW_INCR = -1;
+static const char BLACK_ROW_INCR = +1;
 
-// Square mapping
-// We use little endian rank-file (LERF) mapping
 enum Square
 {
-  A1=0 , B1, C1, D1, E1, F1, G1, H1,
-  A2=8 , B2, C2, D2, E2, F2, G2, H2,
-  A3=16, B3, C3, D3, E3, F3, G3, H3,
-  A4=24, B4, C4, D4, E4, F4, G4, H4,
-  A5=32, B5, C5, D5, E5, F5, G5, H5,
-  A6=40, B6, C6, D6, E6, F6, G6, H6,
-  A7=48, B7, C7, D7, E7, F7, G7, H7,
-  A8=56, B8, C8, D8, E8, F8, G8, H8
-};
-
-// Square mapping for a 90 degree rotation in the counter-clockwise direction
-static const int rotateL90Matrix[64] =
-{
-  H1, H2, H3, H4, H5, H6, H7, H8,
-  G1, G2, G3, G4, G5, G6, G7, G8,
-  F1, F2, F3, F4, F5, F6, F7, F8,
-  E1, E2, E3, E4, E5, E6, E7, E8,
-  D1, D2, D3, D4, D5, D6, D7, D8,
-  C1, C2, C3, C4, C5, C6, C7, C8,
-  B1, B2, B3, B4, B5, B6, B7, B8,
-  A1, A2, A3, A4, A5, A6, A7, A8,
-};
-
-// Square mapping for a 90 degree rotation in the clockwise direction
-static const int rotateR90Matrix[64] =
-{
-  A8, A7, A6, A5, A4, A3, A2, A1,
-  B8, B7, B6, B5, B4, B3, B2, B1,
-  C8, C7, C6, C5, C4, C3, C2, C1,
-  D8, D7, D6, D5, D4, D3, D2, D1,
-  E8, E7, E6, E5, E4, E3, E2, E1,
-  F8, F7, F6, F5, F4, F3, F2, F1,
-  G8, G7, G6, G5, G4, G3, G2, G1,
-  H8, H7, H6, H5, H4, H3, H2, H1,
-};
-
-// Square mapping for a 45 degree rotation in the counter-clockwise direction
-// Formatted for ease of visualization
-static const int rotateL45Matrix[64] =
-{
-  H1,
-  H2, G1,
-  H3, G2, F1,
-  H4, G3, F2, E1,
-  H5, G4, F3, E2, D1,
-  H6, G5, F4, E3, D2, C1,
-  H7, G6, F5, E4, D3, C2, B1,
-  H8, G7, F6, E5, D4, C3, B2, A1,
-  G8, F7, E6, D5, C4, B3, A2,
-  F8, E7, D6, C5, B4, A3,
-  E8, D7, C6, B5, A4,
-  D8, C7, B6, A5,
-  C8, B7, A6,
-  B8, A7,
-  A8
-};
-
-// Square mapping for a 45 degree rotation in the clockwise direction
-// Formatted for ease of visualization
-static const int rotateR45Matrix[64] =
-{
-  A1,
-  A2,	B1,
-  A3,	B2,	C1,
-  A4,	B3,	C2,	D1,
-  A5,	B4,	C3,	D2,	E1,
-  A6,	B5,	C4,	D3,	E2,	F1,
-  A7,	B6,	C5,	D4,	E3,	F2,	G1,
-  A8,	B7,	C6,	D5,	E4,	F3,	G1,	H1,
-  B8,	C7,	D6,	E5,	F4,	G3,	H2,
-  C8,	D7,	E6,	F5,	G4,	H3,
-  D8,	E7,	F6,	G5,	H4,
-  E8,	F7,	G6,	H5,
-  F8,	G7,	H6,
-  G8,	H7,
-  H8,
+  A8, B8, C8, D8, E8, F8, G8, H8,
+  A7, B7, C7, D7, E7, F7, G7, H7,
+  A6, B6, C6, D6, E6, F6, G6, H6,
+  A5, B5, C5, D5, E5, F5, G5, H5,
+  A4, B4, C4, D4, E4, F4, G4, H4,
+  A3, B3, C3, D3, E3, F3, G3, H3,
+  A2, B2, C2, D2, E2, F2, G2, H2,
+  A1, B1, C1, D1, E1, F1, G1, H1
 };
 
 // Shifts for ranks
-static const uint rankShifts[64] = {
+static const uint rankShifts[64] =
+{
   0, 0, 0, 0, 0, 0, 0, 0,
   8, 8, 8, 8, 8, 8, 8, 8,
   16, 16, 16, 16, 16, 16, 16, 16,
@@ -122,20 +53,9 @@ static const uint rankShifts[64] = {
   56, 56, 56, 56, 56, 56, 56, 56
 };
 
-// Shifts for files
-static const uint fileShifts[64] = {
-  0, 8, 16, 24, 32, 40, 48, 56,
-  0, 8, 16, 24, 32, 40, 48, 56,
-  0, 8, 16, 24, 32, 40, 48, 56,
-  0, 8, 16, 24, 32, 40, 48, 56,
-  0, 8, 16, 24, 32, 40, 48, 56,
-  0, 8, 16, 24, 32, 40, 48, 56,
-  0, 8, 16, 24, 32, 40, 48, 56,
-  0, 8, 16, 24, 32, 40, 48, 56
-};
-
 // Masks for ranks
-static const uint rankMasks[64] = {
+static const uint rankMasks[64] =
+{
   255, 255, 255, 255, 255, 255, 255, 255,
   255, 255, 255, 255, 255, 255, 255, 255,
   255, 255, 255, 255, 255, 255, 255, 255,
@@ -144,10 +64,46 @@ static const uint rankMasks[64] = {
   255, 255, 255, 255, 255, 255, 255, 255,
   255, 255, 255, 255, 255, 255, 255, 255,
   255, 255, 255, 255, 255, 255, 255, 255
+};
+
+static const uint rotateL90Matrix[64] = {
+  H8,H7,H6,H5,H4,H3,H2,H1,
+  G8,G7,G6,G5,G4,G3,G2,G1,
+  F8,F7,F6,F5,F4,F3,F2,F1,
+  E8,E7,E6,E5,E4,E3,E2,E1,
+  D8,D7,D6,D5,D4,D3,D2,D1,
+  C8,C7,C6,C5,C4,C3,C2,C1,
+  B8,B7,B6,B5,B4,B3,B2,B1,
+  A8,A7,A6,A5,A4,A3,A2,A1,
+};
+
+static const uint rotateR90Matrix[64] = {
+  A1,A2,A3,A4,A5,A6,A7,A8,
+  B1,B2,B3,B4,B5,B6,B7,B8,
+  C1,C2,C3,C4,C5,C6,C7,C8,
+  D1,D2,D3,D4,D5,D6,D7,D8,
+  E1,E2,E3,E4,E5,E6,E7,E8,
+  F1,F2,F3,F4,F5,F6,F7,F8,
+  G1,G2,G3,G4,G5,G6,G7,G8,
+  H1,H2,H3,H4,H5,H6,H7,H8
+};
+
+// Shifts for files
+static const uint fileShifts[64] =
+{
+  56, 48, 40, 32, 24, 16, 8, 0,
+  56, 48, 40, 32, 24, 16, 8, 0,
+  56, 48, 40, 32, 24, 16, 8, 0,
+  56, 48, 40, 32, 24, 16, 8, 0,
+  56, 48, 40, 32, 24, 16, 8, 0,
+  56, 48, 40, 32, 24, 16, 8, 0,
+  56, 48, 40, 32, 24, 16, 8, 0,
+  56, 48, 40, 32, 24, 16, 8, 0,
 };
 
 // Masks for files
-static const uint fileMasks[64] = {
+static const uint fileMasks[64] =
+{
   255, 255, 255, 255, 255, 255, 255, 255,
   255, 255, 255, 255, 255, 255, 255, 255,
   255, 255, 255, 255, 255, 255, 255, 255,
@@ -156,6 +112,87 @@ static const uint fileMasks[64] = {
   255, 255, 255, 255, 255, 255, 255, 255,
   255, 255, 255, 255, 255, 255, 255, 255,
   255, 255, 255, 255, 255, 255, 255, 255
+};
+
+static const uint rotateR45Matrix[64] = {
+A8,
+A7,B8,
+A6,B7,C8,
+A5,B6,C7,D8,
+A4,B5,C6,D7,E8,
+A3,B4,C5,D6,E7,F8,
+A2,B3,C4,D5,E6,F7,G8,
+A1,B2,C3,D4,E5,F6,G7,H8,
+B1,C2,D3,E4,F5,G6,H7,
+C1,D2,E3,F4,G5,H6,
+D1,E2,F3,G4,H5,
+E1,F2,G3,H4,
+F1,G2,H3,
+G1,H2,
+H1
+};
+
+static const uint rotateL45Matrix[64] = {
+H8,
+G8,H7,
+F8,G7,H6,
+E8,F7,G6,H5,
+D8,E7,F6,G5,H4,
+C8,D7,E6,F5,G4,H3,
+B8,C7,D6,E5,F4,G3,H2,
+A8,B7,C6,D5,E4,F3,G2,H1,
+A7,B6,C5,D4,E3,F2,G1,
+A6,B5,C4,D3,E2,F1,
+A5,B4,C3,D2,E1,
+A4,B3,C2,D1,
+A3,B2,C1,
+A2,B1,
+A1
+};
+
+/* These simply store the length of the diagonal in the required sense */
+static const uint a1h8Lengths[64] = {
+  1,2,3,4,5,6,7,8,
+  2,3,4,5,6,7,8,7,
+  3,4,5,6,7,8,7,6,
+  4,5,6,7,8,7,6,5,
+  5,6,7,8,7,6,5,4,
+  6,7,8,7,6,5,4,3,
+  7,8,7,6,5,4,3,2,
+  8,7,6,5,4,3,2,1
+};
+
+static const uint a8h1Lengths[64] = {
+  8,7,6,5,4,3,2,1,
+  7,8,7,6,5,4,3,2,
+  6,7,8,7,6,5,4,3,
+  5,6,7,8,7,6,5,4,
+  4,5,6,7,8,7,6,5,
+  3,4,5,6,7,8,7,6,
+  2,3,4,5,6,7,8,7,
+  1,2,3,4,5,6,7,8
+};
+
+static const uint a1h8Shifts[64] = {
+   0, 1, 3, 6,10,15,21,28,
+   1, 3, 6,10,15,21,28,36,
+   3, 6,10,15,21,28,36,43,
+   6,10,15,21,28,36,43,49,
+  10,15,21,28,36,43,49,54,
+  15,21,28,36,43,49,54,58,
+  21,28,36,43,49,54,58,61,
+  28,36,43,49,54,58,61,63
+};
+
+static const uint a8h1Shifts[64] = {
+  28,21,15,10, 6, 3, 1, 0,
+  36,28,21,15,10, 6, 3, 1,
+  43,36,28,21,15,10, 6, 3,
+  49,43,36,28,21,15,10, 6,
+  54,49,43,36,28,21,15,10,
+  58,54,49,43,36,28,21,15,
+  61,58,54,49,43,36,28,21,
+  63,61,58,54,49,43,36,28
 };
 
 //! \class BitBoard
@@ -204,7 +241,7 @@ void BitBoard::generateBlackPawnMoves(MoveList &moveList) const
   u64 bbMove = 0;
 
   // Promotion moves
-  bbMove = (mPiece[BlackPawn] >> 8) & BLACK_PROMOTION_MASK & mPiece[None];
+  bbMove = (mPiece[BlackPawn] << 8) & BLACK_PROMOTION_MASK & mPiece[None];
   while (bbMove) {
     int toSq = bitScanForward(bbMove);
     int fromSq = toSq + NORTH;
@@ -216,7 +253,7 @@ void BitBoard::generateBlackPawnMoves(MoveList &moveList) const
   }
 
   // Pawn pushes
-  u64 pawnPushes = (mPiece[BlackPawn] >> 8) & mPiece[None];
+  u64 pawnPushes = (mPiece[BlackPawn] << 8) & mPiece[None];
   bbMove = pawnPushes & ~BLACK_PROMOTION_MASK;
   while (bbMove) {
     int toSq = bitScanForward(bbMove);
@@ -226,8 +263,8 @@ void BitBoard::generateBlackPawnMoves(MoveList &moveList) const
   }
 
   // Double pawn pushes
-  u64 unmovedPawns = (mPiece[BlackPawn] & (c64(255) << 48));
-  u64 pawnDoublePushes = ( (unmovedPawns & (~(mPiece[All] << 8)) & (~(mPiece[All] << 16)) ) ) >> 16;
+  u64 unmovedPawns = (mPiece[BlackPawn] & (c64(255) << 8));
+  u64 pawnDoublePushes = ( (unmovedPawns & (~(mPiece[All] >> 8)) & (~(mPiece[All] >> 16)) ) ) << 16;
   bbMove = pawnDoublePushes;
   //writeBitBoard(unmovedPawns);
   //writeBitBoard(mPiece[All]);
@@ -408,7 +445,7 @@ void BitBoard::generateWhitePawnMoves(MoveList &moveList) const
   u64 bbMove = 0;
 
   // Promotion moves
-  bbMove = (mPiece[WhitePawn] << 8) & WHITE_PROMOTION_MASK & mPiece[None];
+  bbMove = (mPiece[WhitePawn] >> 8) & WHITE_PROMOTION_MASK & mPiece[None];
   while (bbMove) {
     int toSq = bitScanForward(bbMove);
     int fromSq = toSq + SOUTH;
@@ -420,7 +457,7 @@ void BitBoard::generateWhitePawnMoves(MoveList &moveList) const
   }
 
   // Pawn pushes
-  u64 pawnPushes = (mPiece[WhitePawn] << 8) & mPiece[None];
+  u64 pawnPushes = (mPiece[WhitePawn] >> 8) & mPiece[None];
   bbMove = pawnPushes & ~WHITE_PROMOTION_MASK;
   while (bbMove) {
     int toSq = bitScanForward(bbMove);
@@ -430,8 +467,8 @@ void BitBoard::generateWhitePawnMoves(MoveList &moveList) const
   }
 
   // Pawn double pushes
-  u64 unmovedPawns = (mPiece[WhitePawn] & (c64(255) << 8));
-  u64 pawnDoublePushes = ( (unmovedPawns & (~(mPiece[All] >> 8)) & (~(mPiece[All] >> 16)) ) ) << 16;
+  u64 unmovedPawns = (mPiece[WhitePawn] & (c64(255) << 48));
+  u64 pawnDoublePushes = ( (unmovedPawns & (~(mPiece[All] << 8)) & (~(mPiece[All] << 16)) ) ) >> 16;
   bbMove = pawnDoublePushes;
   while (bbMove) {
     int toSq = bitScanForward(bbMove);
@@ -475,7 +512,6 @@ void BitBoard::initAttacks()
   initKnightAttacks();
   initBishopAttacks();
   initRookAttacks();
-  //writeBitBoard(mPawnAttacks[White][F7], std::cout);
 }
 
 void BitBoard::initBishopAttacks()
@@ -693,8 +729,8 @@ void BitBoard::makeMove(const Move & move)
 {
   // Get move information
   Color side = sideToMove();
-  uchar fromSquare = getIndex(move.sourceRow(), move.sourceCol());
-  uchar toSquare = getIndex(move.destRow(), move.destCol());
+  uchar fromSquare = getIndex(7-move.sourceRow(), move.sourceCol());
+  uchar toSquare = getIndex(7-move.destRow(), move.destCol());
   Type fromPiece = mType[fromSquare];
   Type toPiece = mType[toSquare];
 
@@ -872,7 +908,7 @@ void BitBoard::makeMove(const Move & move)
 
 PieceType BitBoard::pieceType(uchar row, uchar col) const
 {
-  uchar index = getIndex(row, col);
+  uchar index = getIndex(7-row, col);
   switch (mType[index]) {
   case WhitePawn:
     return PieceType::WhitePawn;
@@ -915,7 +951,7 @@ void BitBoard::pushBitBoardMoves(u64 bb, uchar fromSq, MoveList & moveList) cons
 
 void BitBoard::pushMove(uchar from, uchar to, Type piece, Type capture, Type promote, Move::Type type, MoveList & moveList) const
 {
-  Move move(getRow(from), getCol(from), getRow(to), getCol(to), mTypeToPiece[piece]);
+  Move move(7-getRow(from), getCol(from), 7-getRow(to), getCol(to), mTypeToPiece[piece]);
   move.setCastlingRights(castlingRights());
   move.setHalfMoveClock(halfMoveClock());
   move.setFullMoveCounter(fullMoveCounter());
@@ -935,6 +971,13 @@ BitBoard::u64 BitBoard::rotateL45(u64 bb) const
       symmBB += (ONE << index);
 
   return symmBB;
+
+//  u64 symmBB = 0;
+//  for (uint index = 0; index < 64; index++)
+//    if (bb & (ONE << index))
+//      symmBB += (ONE << rotateL45Matrix[index]);
+
+//  return symmBB;
 }
 
 BitBoard::u64 BitBoard::rotateL90(u64 bb) const
@@ -945,6 +988,12 @@ BitBoard::u64 BitBoard::rotateL90(u64 bb) const
       symmBB |= (ONE << index);
 
   return symmBB;
+//  u64 symmBB = 0;
+//  for (uint index = 0; index < 64; index++)
+//    if (bb & (ONE << index))
+//      symmBB |= (ONE << rotateL90Matrix[index]);
+
+//  return symmBB;
 }
 
 BitBoard::u64 BitBoard::rotateR45(u64 bb) const
@@ -955,6 +1004,12 @@ BitBoard::u64 BitBoard::rotateR45(u64 bb) const
       symmBB += (ONE << index);
 
   return symmBB;
+//  u64 symmBB = 0;
+//  for (uint index = 0; index < 64; index++)
+//    if (bb & (ONE << index))
+//      symmBB += (ONE << rotateR45Matrix[index]);
+
+//  return symmBB;
 }
 
 BitBoard::u64 BitBoard::rotateR90(u64 bb) const
@@ -965,6 +1020,13 @@ BitBoard::u64 BitBoard::rotateR90(u64 bb) const
       symmBB |= (ONE << index);
 
   return symmBB;
+
+//  u64 symmBB = 0;
+//  for (uint index = 0; index < 64; index++)
+//    if (bb & (ONE << index))
+//      symmBB |= (ONE << rotateR90Matrix[index]);
+
+//  return symmBB;
 }
 
 void BitBoard::setPosition(const std::string & fenString)
@@ -1004,7 +1066,7 @@ void BitBoard::setPosition(const std::string & fenString)
   for (char row = 0; row < 8; row++) {
     for (char col = 0; col < 8; col++) {
       PieceType type = fenData.pieceType(row, col);
-      uchar sq = getIndex(row, col);
+      uchar sq = getIndex(7-row, col);
       u64 bb = (ONE << sq);
 
       mType[sq] = None;
@@ -1074,6 +1136,15 @@ void BitBoard::setPosition(const std::string & fenString)
   updateRotatedBitBoards();
 
   //writeBitBoard(mPiece[WhitePawn]);
+  //writeBitBoard(mPiece[BlackPawn]);
+  //writeBitBoard(rotateR45(mPiece[All]));
+  //writeOccupancy(rotateR90(mPiece[All]) >> a1h8Shifts[A8] & 255);
+  //writeBitBoard(rotateL45(mPiece[All]) );
+  //writeBitBoard(mPiece[All]);
+  //writeBitBoard((rotateL45(mPiece[All]) >> a8h1Shifts[B1]) & 255);
+  //exit(1);
+  //writeBitBoard(rotateR45(rotateL45(mPiece[WhitePieces])));
+  //writeBitBoard(mPiece[WhitePawn]);
 }
 
 void BitBoard::unmakeMove(const Move & move)
@@ -1081,8 +1152,8 @@ void BitBoard::unmakeMove(const Move & move)
   // Get move information
   Color side = sideToMove();
   Piece piece = move.piece();
-  uchar fromSquare = getIndex(move.sourceRow(), move.sourceCol());
-  uchar toSquare = getIndex(move.destRow(), move.destCol());
+  uchar fromSquare = getIndex(7-move.sourceRow(), move.sourceCol());
+  uchar toSquare = getIndex(7-move.destRow(), move.destCol());
   Type toPiece = mType[toSquare];
 
   Undo undo = mUndoStack[--mUndoPos];
@@ -1219,17 +1290,30 @@ void BitBoard::writeBitBoard(u64 bb, std::ostream &output) const
 {
   std::ostringstream oss;
 
-  for (int i = 7; i >= 0; i--) {
-    oss << i+1 << " ";
-    for (int j = 0; j < 8; j++) {
-      int shift = 8*i + j ;
-      if ( (bb >> shift) & 0x1)
-        oss << "X ";
-      else
-        oss << "- ";
+  for (uchar sq = 0; sq < 64; sq++) {
+    if (getCol(sq) == 0)
+      oss << 8-getRow(sq) << " ";
+
+    if (bb & (ONE << sq)) {
+      oss << "X ";
     }
-    oss << "\n";
+    else {
+      oss << "- ";
+    }
+    if (sq%8 == 7)
+      oss << "\n";
   }
+//  for (int i = 7; i >= 0; i--) {
+//    oss << i+1 << " ";
+//    for (int j = 0; j < 8; j++) {
+//      int shift = 8*i + j ;
+//      if ( (bb >> shift) & 0x1)
+//        oss << "X ";
+//      else
+//        oss << "- ";
+//    }
+//    oss << "\n";
+//  }
   oss << "  ";
   for (int j = 0; j < 8; j++) {
     switch (j) {
@@ -1262,3 +1346,215 @@ void BitBoard::writeBitBoard(u64 bb, std::ostream &output) const
   oss << "\n\n";
   output << oss.str();
 }
+
+void BitBoard::writeOccupancy(uint occupancy, bool flip) const
+{
+  std::ostringstream oss;
+  if (flip) {
+    for (int i = 7; i >=0; i--) {
+      if ( (occupancy >> i) & 0x01)
+        oss << 'X';
+      else
+        oss << '-';
+    }
+  }
+  else {
+    for (int i = 0; i < 8; i++) {
+      if ( (occupancy >> i) & 0x01)
+        oss << 'X';
+      else
+        oss << '-';
+    }
+  }
+
+  std::cout << oss.str() << "\n";
+}
+
+// Square mapping
+// We use little endian rank-file (LERF) mapping
+//enum Square
+//{
+//  A1=0 , B1, C1, D1, E1, F1, G1, H1,
+//  A2=8 , B2, C2, D2, E2, F2, G2, H2,
+//  A3=16, B3, C3, D3, E3, F3, G3, H3,
+//  A4=24, B4, C4, D4, E4, F4, G4, H4,
+//  A5=32, B5, C5, D5, E5, F5, G5, H5,
+//  A6=40, B6, C6, D6, E6, F6, G6, H6,
+//  A7=48, B7, C7, D7, E7, F7, G7, H7,
+//  A8=56, B8, C8, D8, E8, F8, G8, H8
+//};
+
+
+// Shifts for ranks
+//static const uint rankShifts[64] =
+//{
+//  0, 0, 0, 0, 0, 0, 0, 0,
+//  8, 8, 8, 8, 8, 8, 8, 8,
+//  16, 16, 16, 16, 16, 16, 16, 16,
+//  24, 24, 24, 24, 24, 24, 24, 24,
+//  32, 32, 32, 32, 32, 32, 32, 32,
+//  40, 40, 40, 40, 40, 40, 40, 40,
+//  48, 48, 48, 48, 48, 48, 48, 48,
+//  56, 56, 56, 56, 56, 56, 56, 56
+//};
+
+//// Masks for ranks
+//static const uint rankMasks[64] =
+//{
+//  255, 255, 255, 255, 255, 255, 255, 255,
+//  255, 255, 255, 255, 255, 255, 255, 255,
+//  255, 255, 255, 255, 255, 255, 255, 255,
+//  255, 255, 255, 255, 255, 255, 255, 255,
+//  255, 255, 255, 255, 255, 255, 255, 255,
+//  255, 255, 255, 255, 255, 255, 255, 255,
+//  255, 255, 255, 255, 255, 255, 255, 255,
+//  255, 255, 255, 255, 255, 255, 255, 255
+//};
+
+//// Square mapping for a 90 degree rotation in the counter-clockwise direction
+//static const int rotateL90Matrix[64] =
+//{
+//  H1, H2, H3, H4, H5, H6, H7, H8,
+//  G1, G2, G3, G4, G5, G6, G7, G8,
+//  F1, F2, F3, F4, F5, F6, F7, F8,
+//  E1, E2, E3, E4, E5, E6, E7, E8,
+//  D1, D2, D3, D4, D5, D6, D7, D8,
+//  C1, C2, C3, C4, C5, C6, C7, C8,
+//  B1, B2, B3, B4, B5, B6, B7, B8,
+//  A1, A2, A3, A4, A5, A6, A7, A8,
+//};
+
+//// Square mapping for a 90 degree rotation in the clockwise direction
+//static const int rotateR90Matrix[64] =
+//{
+//  A8, A7, A6, A5, A4, A3, A2, A1,
+//  B8, B7, B6, B5, B4, B3, B2, B1,
+//  C8, C7, C6, C5, C4, C3, C2, C1,
+//  D8, D7, D6, D5, D4, D3, D2, D1,
+//  E8, E7, E6, E5, E4, E3, E2, E1,
+//  F8, F7, F6, F5, F4, F3, F2, F1,
+//  G8, G7, G6, G5, G4, G3, G2, G1,
+//  H8, H7, H6, H5, H4, H3, H2, H1,
+//};
+
+//// Shifts for files
+//static const uint fileShifts[64] =
+//{
+//  56, 48, 40, 32, 24, 16, 8, 0,
+//  56, 48, 40, 32, 24, 16, 8, 0,
+//  56, 48, 40, 32, 24, 16, 8, 0,
+//  56, 48, 40, 32, 24, 16, 8, 0,
+//  56, 48, 40, 32, 24, 16, 8, 0,
+//  56, 48, 40, 32, 24, 16, 8, 0,
+//  56, 48, 40, 32, 24, 16, 8, 0,
+//  56, 48, 40, 32, 24, 16, 8, 0,
+//};
+
+//// Masks for files
+//static const uint fileMasks[64] =
+//{
+//  255, 255, 255, 255, 255, 255, 255, 255,
+//  255, 255, 255, 255, 255, 255, 255, 255,
+//  255, 255, 255, 255, 255, 255, 255, 255,
+//  255, 255, 255, 255, 255, 255, 255, 255,
+//  255, 255, 255, 255, 255, 255, 255, 255,
+//  255, 255, 255, 255, 255, 255, 255, 255,
+//  255, 255, 255, 255, 255, 255, 255, 255,
+//  255, 255, 255, 255, 255, 255, 255, 255
+//};
+
+//// Square mapping for a 45 degree rotation in the counter-clockwise (a1h8) direction
+//// Represents the trailing (NW) diagonals
+//// Formatted for ease of visualization
+////static const int rotateL45Matrix[64] =
+////{
+////  H1,
+////  G1, H2,
+////  F1, G2, F1,
+////  E1, G3, F2, E1,
+////  D1, G4, F3, E2, D1,
+////  C1, G5, F4, E3, D2, C1,
+////  H7, G6, F5, E4, D3, C2, B1,
+////  H8, G7, F6, E5, D4, C3, B2, A1,
+////  G8, F7, E6, D5, C4, B3, A2,
+////  F8, E7, D6, C5, B4, A3,
+////  E8, D7, C6, B5, A4,
+////  D8, C7, B6, A5,
+////  C8, B7, A6,
+////  B8, A7,
+////  A8
+////};
+
+//// Square mapping for a 45 degree rotation in the counter-clockwise (a1h8) direction
+//// Represents the trailing (NW) diagonals
+//// Formatted for ease of visualization
+//static const uint rotateL45Matrix[64] =
+//{
+//  H8,
+//  G8,	H7,
+//  F8,	G7,	H6,
+//  E8,	F7,	G6,	H5,
+//  D8,	E7,	F6,	G5,	H6,
+//  C8,	D7,	E6,	F5,	G4,	H3,
+//  B8,	C7,	D6,	E5,	F4,	G3,	H2,
+//  A8,	B7,	C6,	D5,	E4,	F3,	G2,	H1,
+//  A7,	B6,	C5,	D4,	E3,	F2,	G1,
+//  A6,	B5,	C4,	D3,	E2,	F1,
+//  A5,	B4,	C3,	D2,	E1,
+//  A4,	B3,	C2,	D1,
+//  A3,	B2,	C1,
+//  A2,	B1,
+//  A1
+//};
+
+//static const uint a1h8Shifts[64] =
+//{
+//  56,
+//};
+
+//// Square mapping for a 45 degree rotation in the clockwise (a8h1) direction
+//// Represents the leading (NE) diagonals
+//// Formatted for ease of visualization
+//static const int rotateR45Matrix[64] =
+//{
+//  A1,
+//  A2,	B1,
+//  A3,	B2,	C1,
+//  A4,	B3,	C2,	D1,
+//  A5,	B4,	C3,	D2,	E1,
+//  A6,	B5,	C4,	D3,	E2,	F1,
+//  A7,	B6,	C5,	D4,	E3,	F2,	G1,
+//  A8,	B7,	C6,	D5,	E4,	F3,	G1,	H1,
+//  B8,	C7,	D6,	E5,	F4,	G3,	H2,
+//  C8,	D7,	E6,	F5,	G4,	H3,
+//  D8,	E7,	F6,	G5,	H4,
+//  E8,	F7,	G6,	H5,
+//  F8,	G7,	H6,
+//  G8,	H7,
+//  H8,
+//};
+
+//static const uint a8h1Shifts[64] =
+//{
+
+//};
+
+//static const uint a1h8Masks[64] =
+//{
+
+//};
+
+//static const uint a8h1Masks[64] =
+//{
+
+//};
+
+//static const uint a1h8Lengths[64] =
+//{
+
+//};
+
+//static const uint a8h1Lengths[64] =
+//{
+
+//};
