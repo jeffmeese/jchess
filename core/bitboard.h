@@ -72,6 +72,8 @@ private:
   void initKingAttacks();
   void initKnightAttacks();
   void initRookAttacks();
+  U64 invRotateL45(U64 bb) const;
+  U64 invRotateR45(U64 bb) const;
   bool isCellAttacked(uchar index, Color attackingColor) const;
   void pushBitBoardMoves(U64 bb, uchar fromSq, MoveList & moveList) const;
   void pushMove(uchar from, uchar to, Type piece, Type capture, Type promote, Move::Type type, MoveList & moveList) const;
