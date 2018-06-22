@@ -66,6 +66,18 @@ static const uint rotateR90Matrix[64] =
   H8, H7, H6, H5, H4, H3, H2, H1
 };
 
+//static const uint rotateR90Matrix[64] =
+//{
+//  A1,A2,A3,A4,A5,A6,A7,A8,
+//  B1,B2,B3,B4,B5,B6,B7,B8,
+//  C1,C2,C3,C4,C5,C6,C7,C8,
+//  D1,D2,D3,D4,D5,D6,D7,D8,
+//  E1,E2,E3,E4,E5,E6,E7,E8,
+//  F1,F2,F3,F4,F5,F6,F7,F8,
+//  G1,G2,G3,G4,G5,G6,G7,G8,
+//  H1,H2,H3,H4,H5,H6,H7,H8
+//};
+
 static const uint rotateL90Matrix[] =
 {
   H8, H7, H6, H5, H4, H3, H2, H1,
@@ -90,6 +102,19 @@ static const uint fileShifts[64] =
   56, 48, 40, 32, 24, 16, 8, 0,
   56, 48, 40, 32, 24, 16, 8, 0,
 };
+
+//static const uint fileShifts[64] =
+//{
+//  0, 8, 16, 24, 32, 40, 48, 56,
+//  0, 8, 16, 24, 32, 40, 48, 56,
+//  0, 8, 16, 24, 32, 40, 48, 56,
+//  0, 8, 16, 24, 32, 40, 48, 56,
+//  0, 8, 16, 24, 32, 40, 48, 56,
+//  0, 8, 16, 24, 32, 40, 48, 56,
+//  0, 8, 16, 24, 32, 40, 48, 56,
+//  0, 8, 16, 24, 32, 40, 48, 56,
+//};
+
 
 // Northeast diagonals
 // Formatted for ease of visualization
@@ -394,8 +419,8 @@ void BitBoard::generateMoves(MoveList & moveList) const
 
   generateJumpAttacks(knights, mKnightAttacks, friends, moveList);
   generateJumpAttacks(kings, mKingAttacks, friends, moveList);
-  //generateSlideAttacks(rooks, mRankAttacks, friends, mPiece[All], rankShifts, mRankMasks, moveList);
-  //generateSlideAttacks(rooks, mFileAttacks, friends, mRotateR90, fileShifts, mFileMasks, moveList);
+  generateSlideAttacks(rooks, mRankAttacks, friends, mPiece[All], rankShifts, mRankMasks, moveList);
+  generateSlideAttacks(rooks, mFileAttacks, friends, mRotateR90, fileShifts, mFileMasks, moveList);
   //generateSlideAttacks(bishops, mNorthEastAttacks, friends, mRotateR45, a1h8Shifts, mNorthEastMasks, moveList);
   //generateSlideAttacks(bishops, mNorthWestAttacks, friends, mRotateL45, a8h1Shifts, mNorthWestMasks, moveList);
   //generateSlideAttacks(queens, mRankAttacks, friends, mPiece[All], rankShifts, mRankMasks, moveList);
@@ -455,6 +480,12 @@ void BitBoard::generateSlideAttacks(U64 piece, const U64 attacks[][256], U64 fri
     uchar fromSq = bitScanForward(piece);
     uint shift = shifts[fromSq];
     uint occupancy = (pieces >> shift) & masks[fromSq];
+    if (fromSq == 63) {
+      writeBitBoard(mRotateR90);
+      std::cout << occupancy << "\n";
+      writeOccupancy(occupancy);
+    }
+
     U64 move = attacks[fromSq][occupancy] & ~friends;
     pushBitBoardMoves(move, fromSq, moveList);
     piece &= piece-1;
@@ -671,16 +702,16 @@ void BitBoard::initRookAttacks()
     for (int occupancy = 0; occupancy < 256; occupancy++) {
       U64 bb = 0;
 
-      for (int x = col-1; x >=0; x--) {
-        bb += (ONE << x);
-        if (occupancy & (1<<x)) {
+      for (int i = col-1; i >=0; i--) {
+        bb += (ONE << i);
+        if (occupancy & (1<<i)) {
           break;
         }
       }
 
-      for (int x = col+1; x < 8; x++) {
-        bb += (ONE << x);
-        if (occupancy & (1<<x)) {
+      for (int i = col+1; i < 8; i++) {
+        bb += (ONE << i);
+        if (occupancy & (1<<i)) {
           break;
         }
       }
@@ -698,21 +729,27 @@ void BitBoard::initRookAttacks()
       U64 bb = 0;
 
       for (int i = (7-row)+1; i < 8; i++) {
-        bb += (ONE << i);
+        bb += (ONE << (8*(7-i)));
+        //bb += (ONE << 8*i);
         if (occupancy & (1 << i)) break;
       }
 
       for (int i = (7-row)-1; i >= 0; i--) {
-        bb += (ONE << i);
+        bb += (ONE << (8*(7-i)));
+        //bb += (ONE << 8*i);
         if (occupancy & (1 << i)) break;
       }
 
       for (int col = 0; col < 8; col++) {
-        uint shift = (7-col)*8;
-        mFileAttacks[(row*8)+col][occupancy] = rotateL90(bb << shift);
+        mFileAttacks[(row*8)+col][occupancy] = bb << col;
       }
     }
   }
+
+  uint occupancy = 197;
+  writeOccupancy(occupancy);
+  writeBitBoard(mFileAttacks[56][occupancy]);
+  //exit(1);
 }
 
 BitBoard::U64 BitBoard::invRotateL45(U64 bb) const
@@ -1100,12 +1137,13 @@ void BitBoard::testRotations()
   U64 from = (ONE << fromSq);
   U64 to = (ONE << toSq);
   U64 fromTo = from ^ to;
-  uint shift = a1h8Shifts[fromSq];
-  uint length = a1h8Lengths[fromSq];
+  uint shift = fileShifts[fromSq];
+  //uint length = a1h8Lengths[fromSq];
+  uint length = 8;
   uint mask = (1 << length) - 1;
 
   // Do occupancy
-  U64 rotated = rotateR45(mPiece[All]);
+  U64 rotated = rotateR90(mPiece[All]);
   U64 shifted = rotated >> shift;
   uint occupancy = (shifted & mask);
   std::cout << "\nPieces\n";              writeBitBoard(mPiece[All]);
@@ -1115,13 +1153,13 @@ void BitBoard::testRotations()
 
   // Do move
   mPiece[All] ^= fromTo;
-  rotated &= mInvMask[mInvRotR45[fromSq]];
-  rotated |= mMask[mInvRotR45[toSq]];
-  bool success = (rotateR45(mPiece[All]) == rotated);
+  rotated &= mInvMask[mInvRotR90[fromSq]];
+  rotated |= mMask[mInvRotR90[toSq]];
+  bool success = (rotateR90(mPiece[All]) == rotated);
   std::string result = (success) ? "success" : "failure";
 
   std::cout << "\nPieces after move\n";             writeBitBoard(mPiece[All]);
-  std::cout << "\nRotated after move\n";            writeBitBoard(rotateR45(mPiece[All]));
+  std::cout << "\nRotated after move\n";            writeBitBoard(rotateR90(mPiece[All]));
   std::cout << "\nIncremental update after move\n"; writeBitBoard(rotated);
   std::cout << "\nResult: ";                        std::cout << result << "\n";
 
@@ -1162,10 +1200,17 @@ BitBoard::U64 BitBoard::rotateR90(U64 bb) const
 {
   U64 symmBB = 0;
   for (uint index = 0; index < 64; index++)
-    if (bb & (ONE << index))
-      symmBB |= (ONE << rotateR90Matrix[index]);
+    if (bb & (ONE << rotateR90Matrix[index]))
+      symmBB |= (ONE << index);
 
   return symmBB;
+
+//  U64 symmBB = 0;
+//  for (uint index = 0; index < 64; index++)
+//    if (bb & (ONE << index))
+//      symmBB |= (ONE << rotateR90Matrix[index]);
+
+//  return symmBB;
 }
 
 void BitBoard::setPosition(const std::string & fenString)
