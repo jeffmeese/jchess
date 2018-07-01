@@ -25,12 +25,14 @@ public:
 private:
   typedef ulonglong U64;
 
+  // Side to move
   enum Side
   {
     White = 0,
     Black = 1
   };
 
+  // Piece types for bit boards
   enum Type
   {
     WhitePieces = 0,
@@ -51,6 +53,7 @@ private:
     All = 15
   };
 
+  // Undo structure to save rotation matrices
   struct Undo
   {
     U64 rotate90;
@@ -93,23 +96,23 @@ private:
   void testRotations();
 
 private:
-  uint mUndoPos;
-  Side mSide;
-  U64 mRotateL45;
-  U64 mRotateR45;
-  U64 mRotateR90;
-  uint mNorthEastMasks[64];
-  uint mNorthWestMasks[64];
-  uint mFileMasks[64];
-  uint mRankMasks[64];
+  uint mUndoPos;                   //! Position of undo stack
+  Side mSide;                      //! Side to move
+  U64 mRotateL45;                  //! Bitboard of all pieces rotated 90 degrees CCW
+  U64 mRotateR45;                  //! Bitboard of all pieces rotated 45 degrees CW
+  U64 mRotateR90;                  //! Bitboard of all pieces rotated 90 degrees CW
+  uint mNorthEastMasks[64];        //! Masks for north east (a1h8) diagonals
+  uint mNorthWestMasks[64];        //! Masks for north west (a8h1) diagonals
+  uint mFileMasks[64];             //! Masks for files
+  uint mRankMasks[64];             //! Masks for ranks
   Piece mTypeToPiece[15];          //! Table of Type to Piece
-  U64 mPiece[16];
-  U64 mMask[64];
-  U64 mInvMask[64];
-  U64 mInvRotR45[64];
-  U64 mInvRotL45[64];
-  U64 mInvRotR90[64];
-  Type mType[64];
+  Type mType[64];                  //! Type of piece on each square
+  U64 mPiece[16];                  //! Bitboards for each type of piece
+  U64 mMask[64];                   //! Masks for each square
+  U64 mInvMask[64];                //! Inverse masks for each square
+  U64 mInvRotR45[64];              //! Inverse masks for each square in the CW 45 degree rotated bitboard
+  U64 mInvRotL45[64];              //! Inverse masks for each square in the CCW 45 degree rotated bitboard
+  U64 mInvRotR90[64];              //! Inverse masks for each square in the CW 90 degree rotated bitboard
   U64 mKingAttacks[64];            //! Attack bitboards for kings for each square
   U64 mKnightAttacks[64];          //! Attack bitboards for knights for each square
   U64 mPawnAttacks[2][64];         //! Attack bitboards for pawns on each square
@@ -117,7 +120,7 @@ private:
   U64 mNorthEastAttacks[64][256];  //! Attack bitboards along a1h8 diagonal for all occupanies
   U64 mNorthWestAttacks[64][256];  //! Attack bitboards along a8h1 diagonal for all occupanies
   U64 mRankAttacks[64][256];       //! Attack bitboards along ranks for all occupanies
-  Undo mUndoStack[1000];
+  Undo mUndoStack[1000];           //! Undo stack used in unmakeMove
 };
 
 #endif // BITBOARD_H

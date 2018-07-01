@@ -2,6 +2,9 @@
 #include "fen.h"
 
 #include <cassert>
+#include <intrin.h>
+
+#pragma intrinsic(_BitScanForward64)
 
 // Helper macros for bitboards
 #define C64(constantU64) constantU64##ULL
@@ -41,6 +44,7 @@ enum Square
 
 // Rotation matrices
 
+// Rotation matrix for 90 degree CW rotation
 static const uint rotateR90Matrix[] =
 {
   A8, A7, A6, A5, A4, A3, A2, A1,
@@ -53,20 +57,22 @@ static const uint rotateR90Matrix[] =
   H8, H7, H6, H5, H4, H3, H2, H1
 };
 
+// Rotation matrix for 90 degree CCW rotation
 static const uint rotateL90Matrix[] =
 {
-  H8, H7, H6, H5, H4, H3, H2, H1,
-  G8, G7, G6, G5, G4, G3, G2, G1,
-  F8, F7, F6, F5, F4, F3, F2, F1,
-  E8, E7, E6, E5, E4, E3, E2, E1,
-  D8, D7, D6, D5, D4, D3, D2, D1,
-  C8, C7, C6, C5, C4, C3, C2, C1,
-  B8, B7, B6, B5, B4, B3, B2, B1,
-  A8, A7, A6, A5, A4, A3, A2, A1
+  H1, H2, H3, H4, H5, H6, H7, H8,
+  G1, G2, G3, G4, G5, G6, G7, G8,
+  F1, F2, F3, F4, F5, F6, F7, F8,
+  E1, E2, E3, E4, E5, E6, E7, E8,
+  D1, D2, D3, D4, D5, D6, D7, D8,
+  C1, C2, C3, C4, C5, C6, C7, C8,
+  B1, B2, B3, B4, B5, B6, B7, B8,
+  A1, A2, A3, A4, A5, A6, A7, A8
 };
 
 // Shifts for ranks
-static const uint rankShifts[64] = {
+static const uint rankShifts[64] =
+{
   0, 0, 0, 0, 0, 0, 0, 0,
   8, 8, 8, 8, 8, 8, 8, 8,
   16, 16, 16, 16, 16, 16, 16, 16,
@@ -78,7 +84,8 @@ static const uint rankShifts[64] = {
 };
 
 // Shifts for files
-static const uint fileShifts[64] = {
+static const uint fileShifts[64] =
+{
   0, 8, 16, 24, 32, 40, 48, 56,
   0, 8, 16, 24, 32, 40, 48, 56,
   0, 8, 16, 24, 32, 40, 48, 56,
@@ -89,70 +96,7 @@ static const uint fileShifts[64] = {
   0, 8, 16, 24, 32, 40, 48, 56
 };
 
-// Masks for ranks
-static const uint rankMasks[64] = {
-  255, 255, 255, 255, 255, 255, 255, 255,
-  255, 255, 255, 255, 255, 255, 255, 255,
-  255, 255, 255, 255, 255, 255, 255, 255,
-  255, 255, 255, 255, 255, 255, 255, 255,
-  255, 255, 255, 255, 255, 255, 255, 255,
-  255, 255, 255, 255, 255, 255, 255, 255,
-  255, 255, 255, 255, 255, 255, 255, 255,
-  255, 255, 255, 255, 255, 255, 255, 255
-};
-
-// Masks for files
-static const uint fileMasks[64] = {
-  255, 255, 255, 255, 255, 255, 255, 255,
-  255, 255, 255, 255, 255, 255, 255, 255,
-  255, 255, 255, 255, 255, 255, 255, 255,
-  255, 255, 255, 255, 255, 255, 255, 255,
-  255, 255, 255, 255, 255, 255, 255, 255,
-  255, 255, 255, 255, 255, 255, 255, 255,
-  255, 255, 255, 255, 255, 255, 255, 255,
-  255, 255, 255, 255, 255, 255, 255, 255
-};
-
-// Formatted for ease of visualization
-static const uint rotateR45Matrix[] =
-{
-  A8,                                   // 0
-  A7, B8,                               // 1
-  A6, B7, C8,                           // 3
-  A5, B6, C7, D8,                       // 6
-  A4, B5, C6, D7, E8,                   // 10
-  A3, B4, C5, D6, E7, F8,               // 15
-  A2, B3, C4, D5, E6, F7, G8,           // 21
-  A1, B2, C3, D4, E5, F6, G7, H8,       // 28
-  B1, C2, D3, E4, F5, G6, H7,           // 36
-  C1, D2, E3, F4, G5, H6,               // 43
-  D1, E2, F3, G4, H5,                   // 49
-  E1, F2, G3, H4,                       // 54
-  F1, G2, H3,                           // 58
-  G1, H2,                               // 61
-  H1                                    // 63
-};
-
-// Formatted for ease of visualization
-static const uint invRotateL45Matrix[] =
-{
-  H8,                                   // 0
-  G8, E8,                               // 1
-  B8, F7, A7,                           // 3
-  C6, D5, F8, D8,                       // 6
-  A8, E7, H6, B6, C5,                   // 10
-  D4, C8, H7, D7, G6, A6,               // 15
-  B5, C4, E3, G7, C7, F6, H5,           // 21
-  A5, B4, D3, G2, B7, E6, G5, H4,       // 28
-  A4, C3, F2, B2, D6, F5, G4,           // 36
-  H3, B3, E2, A2, F1, E5,               // 43
-  F4, G3, A3, D2, H1,                   // 49
-  E1, C1, E4, F3,                       // 54
-  H2, C2, G1,                           // 58
-  D1, B1,                               // 61
-  A1                                    // 63
-};
-
+// Rotation matrix for 45 degree CCW rotation
 // Formatted for ease of visualization
 static const uint rotateL45Matrix[] =
 {
@@ -173,6 +117,51 @@ static const uint rotateL45Matrix[] =
   A1                                    // 63
 };
 
+// TODO: Find a way to make this unnecessary
+// Rotation matrix for inverse 45 degree CCW rotation
+// Formatted for ease of visualization
+static const uint invRotateL45Matrix[] =
+{
+  H8,                                   // 0
+  G8, E8,                               // 1
+  B8, F7, A7,                           // 3
+  C6, D5, F8, D8,                       // 6
+  A8, E7, H6, B6, C5,                   // 10
+  D4, C8, H7, D7, G6, A6,               // 15
+  B5, C4, E3, G7, C7, F6, H5,           // 21
+  A5, B4, D3, G2, B7, E6, G5, H4,       // 28
+  A4, C3, F2, B2, D6, F5, G4,           // 36
+  H3, B3, E2, A2, F1, E5,               // 43
+  F4, G3, A3, D2, H1,                   // 49
+  E1, C1, E4, F3,                       // 54
+  H2, C2, G1,                           // 58
+  D1, B1,                               // 61
+  A1                                    // 63
+};
+
+// Rotation matrix for 45 degree CW rotation
+// Formatted for ease of visualization
+static const uint rotateR45Matrix[] =
+{
+  A8,                                   // 0
+  A7, B8,                               // 1
+  A6, B7, C8,                           // 3
+  A5, B6, C7, D8,                       // 6
+  A4, B5, C6, D7, E8,                   // 10
+  A3, B4, C5, D6, E7, F8,               // 15
+  A2, B3, C4, D5, E6, F7, G8,           // 21
+  A1, B2, C3, D4, E5, F6, G7, H8,       // 28
+  B1, C2, D3, E4, F5, G6, H7,           // 36
+  C1, D2, E3, F4, G5, H6,               // 43
+  D1, E2, F3, G4, H5,                   // 49
+  E1, F2, G3, H4,                       // 54
+  F1, G2, H3,                           // 58
+  G1, H2,                               // 61
+  H1                                    // 63
+};
+
+// TODO: Find a way to make this unnecessary
+// Rotation matrix for inverse 45 degree CW rotation
 // Formatted for ease of visualization
 static const uint invRotateR45Matrix[] =
 {
@@ -194,7 +183,8 @@ static const uint invRotateR45Matrix[] =
 };
 
 // Lengths for north east diagonals
-static const uint a1h8Lengths[64] = {
+static const uint a1h8Lengths[64] =
+{
   8, 7, 6, 5, 4, 3, 2, 1,
   7, 8, 7, 6, 5, 4, 3, 2,
   6, 7, 8, 7, 6, 5, 4, 3,
@@ -206,7 +196,8 @@ static const uint a1h8Lengths[64] = {
 };
 
 // Masks for north east diagonals
-static const uint a1h8Masks[64] = {
+static const uint a1h8Masks[64] =
+{
   255, 127,  63,  31,  15,   7,   3,   1,
   127, 255, 127,  63,  31,  15,   7,   3,
    63, 127, 255, 127,  63,  31,  15,   7,
@@ -218,8 +209,8 @@ static const uint a1h8Masks[64] = {
 };
 
 // Shifts for north east diagonals
-// 43
-static const uint a1h8Shifts[64] = {
+static const uint a1h8Shifts[64] =
+{
   28, 36, 43, 49, 54, 58, 61, 63,
   21, 28, 36, 43, 49, 54, 58, 61,
   15, 21, 28, 36, 43, 49, 54, 58,
@@ -231,7 +222,8 @@ static const uint a1h8Shifts[64] = {
 };
 
 // Lengths for north west diagonals
-static const uint a8h1Lengths[64] = {
+static const uint a8h1Lengths[64] =
+{
   1, 2, 3, 4, 5, 6, 7, 8,
   2, 3, 4, 5, 6, 7, 8, 7,
   3, 4, 5, 6, 7, 8, 7, 6,
@@ -243,7 +235,8 @@ static const uint a8h1Lengths[64] = {
 };
 
 // Masks for north west diagonals
-static const uint a8h1Masks[64] = {
+static const uint a8h1Masks[64] =
+{
     1,   3,   7,  15,  31,  63, 127, 255,
     3,   7,  15,  31,  63, 127, 255, 127,
     7,  15,  31,  63, 127, 255, 127,  63,
@@ -255,7 +248,8 @@ static const uint a8h1Masks[64] = {
 };
 
 // Shifts for north west diagonals
-static const uint a8h1Shifts[64] = {
+static const uint a8h1Shifts[64] =
+{
   63, 61, 58, 54, 49, 43, 36, 28,
   61, 58, 54, 49, 43, 36, 28, 21,
   58, 54, 49, 43, 36, 28, 21, 15,
@@ -266,6 +260,7 @@ static const uint a8h1Shifts[64] = {
   28, 21, 15, 10,  6,  3,  1,  0
 };
 
+// Constructor
 BitBoard::BitBoard()
 {
   init();
@@ -287,24 +282,25 @@ BitBoard::BitBoard()
  */
 inline uchar BitBoard::bitScanForward(U64 bb) const
 {
-  static const uchar index64[64] =
-  {
-     63,  0, 58,  1, 59, 47, 53,  2,
-     60, 39, 48, 27, 54, 33, 42,  3,
-     61, 51, 37, 40, 49, 18, 28, 20,
-     55, 30, 34, 11, 43, 14, 22,  4,
-     62, 57, 46, 52, 38, 26, 32, 41,
-     50, 36, 17, 19, 29, 10, 13, 21,
-     56, 45, 25, 31, 35, 16,  9, 12,
-     44, 24, 15,  8, 23,  7,  6,  5
-  };
+//  static const uchar index64[64] =
+//  {
+//     63,  0, 58,  1, 59, 47, 53,  2,
+//     60, 39, 48, 27, 54, 33, 42,  3,
+//     61, 51, 37, 40, 49, 18, 28, 20,
+//     55, 30, 34, 11, 43, 14, 22,  4,
+//     62, 57, 46, 52, 38, 26, 32, 41,
+//     50, 36, 17, 19, 29, 10, 13, 21,
+//     56, 45, 25, 31, 35, 16,  9, 12,
+//     44, 24, 15,  8, 23,  7,  6,  5
+//  };
 
-  //ulong index = 0;
-  //_BitScanForward64(&index, bb);
-  //return static_cast<uchar>(index);
-   static const ulonglong debruijn64 = ulonglong(0x07EDD5E59A4E28C2);
-   assert (bb != 0);
-   return index64[((bb & -bb) * debruijn64) >> 58];
+//  static const ulonglong debruijn64 = ulonglong(0x07EDD5E59A4E28C2);
+//  assert (bb != 0);
+//  return index64[((bb & -bb) * debruijn64) >> 58];
+
+  ulong index = 0;
+  _BitScanForward64(&index, bb);
+  return static_cast<uchar>(index);
 }
 
 void BitBoard::generateBlackPawnMoves(MoveList &moveList) const
@@ -347,7 +343,7 @@ void BitBoard::generateBlackPawnMoves(MoveList &moveList) const
 
 void BitBoard::generateCastlingMoves(MoveList & moveList) const
 {
-  if (sideToMove() == Color::White) {
+  if (mSide == White) {
     if (castlingRights() & CASTLE_WHITE_KING) {
       if (mType[Square::F1] == Type::None &&
           mType[Square::G1] == Type::None &&
@@ -743,13 +739,11 @@ void BitBoard::initRookAttacks()
 
       for (int i = (7-row)+1; i < 8; i++) {
         bb += (ONE << (8*(7-i)));
-        //bb += (ONE << 8*i);
         if (occupancy & (1 << i)) break;
       }
 
       for (int i = (7-row)-1; i >= 0; i--) {
         bb += (ONE << (8*(7-i)));
-        //bb += (ONE << 8*i);
         if (occupancy & (1 << i)) break;
       }
 
@@ -784,40 +778,32 @@ bool BitBoard::isCellAttacked(uchar index, Color attackingColor) const
 {
   Side bySide = (attackingColor == Color::White) ? White : Black;
 
-  U64 pawns = mPiece[WhitePawn + bySide];
-  if (mPawnAttacks[bySide^1][index] & pawns)
+  if (mPawnAttacks[bySide^1][index] & mPiece[WhitePawn + bySide])
     return true;
 
-  U64 knights = mPiece[WhiteKnight + bySide];
-  if (mKnightAttacks[index] & knights)
+  if (mKnightAttacks[index] & mPiece[WhiteKnight + bySide])
     return true;
 
-  U64 kings = mPiece[WhiteKing + bySide];
-  if (mKingAttacks[index] & kings)
+  if (mKingAttacks[index] & mPiece[WhiteKing + bySide])
     return true;
 
-  uint shift = 0;
   uint occupancy = 0;
-  U64 bishopsQueens = mPiece[WhiteBishop + bySide] | mPiece[WhiteQueen + bySide];
-  U64 rooksQueens = mPiece[WhiteRook + bySide] | mPiece[WhiteQueen + bySide];
 
-  shift = rankShifts[index];
-  occupancy = (mPiece[All] >> shift) & mRankMasks[index];
+  U64 rooksQueens = mPiece[WhiteRook + bySide] | mPiece[WhiteQueen + bySide];
+  occupancy = (mPiece[All] >> rankShifts[index]) & mRankMasks[index];
   if (mRankAttacks[index][occupancy] & rooksQueens)
     return true;
 
-  shift = fileShifts[index];
-  occupancy = (mRotateR90>> shift) & mFileMasks[index];
+  occupancy = (mRotateR90>> fileShifts[index]) & mFileMasks[index];
   if (mFileAttacks[index][occupancy] & rooksQueens)
     return true;
 
-  shift = a1h8Shifts[index];
-  occupancy = (mRotateR45 >> shift) & mNorthEastMasks[index];
+  U64 bishopsQueens = mPiece[WhiteBishop + bySide] | mPiece[WhiteQueen + bySide];
+  occupancy = (mRotateR45 >> a1h8Shifts[index]) & mNorthEastMasks[index];
   if (mNorthEastAttacks[index][occupancy] & bishopsQueens)
     return true;
 
-  shift = a8h1Shifts[index];
-  occupancy = (mRotateL45 >> shift) & mNorthWestMasks[index];
+  occupancy = (mRotateL45 >> a8h1Shifts[index]) & mNorthWestMasks[index];
   if (mNorthWestAttacks[index][occupancy] & bishopsQueens)
     return true;
 
@@ -831,19 +817,19 @@ bool BitBoard::isCellAttacked(uchar row, uchar col, Color attackingColor) const
 
 void BitBoard::makeMove(const Move & move)
 {
-  // Get move information
-  Color side = sideToMove();
-  uchar fromSquare = getIndex(move.sourceRow(), move.sourceCol());
-  uchar toSquare = getIndex(move.destRow(), move.destCol());
-  Type fromPiece = mType[fromSquare];
-  Type toPiece = mType[toSquare];
-
   // Add to the undo stack
   Undo undo;
   undo.rotate90 = mRotateR90;
   undo.rotateL45 = mRotateL45;
   undo.rotateR45 = mRotateR45;
   mUndoStack[mUndoPos++] = undo;
+
+  // Get move information
+  Color side = sideToMove();
+  uchar fromSquare = getIndex(move.sourceRow(), move.sourceCol());
+  uchar toSquare = getIndex(move.destRow(), move.destCol());
+  Type fromPiece = mType[fromSquare];
+  Type toPiece = mType[toSquare];
 
   // Calculate required bitboards
   U64 bbFrom = (ONE << fromSquare);
@@ -870,6 +856,10 @@ void BitBoard::makeMove(const Move & move)
     uchar sq = toSquare + dir;
     mType[sq] = Type::None;
     mPiece[WhitePawn + !mSide] &= ~(ONE << sq);
+
+    mRotateR90 &= mInvMask[rotateL90Matrix[sq]];
+    mRotateR45 &= mInvMask[mInvRotR45[sq]];
+    mRotateL45 &= mInvMask[mInvRotL45[sq]];
   }
 
   // Handle king move
@@ -964,28 +954,49 @@ void BitBoard::makeMove(const Move & move)
       mType[A1] = Type::None;
       mPiece[WhiteRook] ^= (ONE << D1);
       mPiece[WhiteRook] ^= (ONE << A1);
+      mRotateR90 ^= mMask[rotateL90Matrix[A1]] | mMask[rotateL90Matrix[C1]] | mMask[rotateL90Matrix[D1]] | mMask[rotateL90Matrix[E1]];
+      mRotateR45 ^= mMask[mInvRotR45[A1]] | mMask[mInvRotR45[C1]] | mMask[mInvRotR45[D1]] | mMask[mInvRotR45[E1]];
+      mRotateL45 ^= mMask[mInvRotL45[A1]] | mMask[mInvRotL45[C1]] | mMask[mInvRotL45[D1]] | mMask[mInvRotL45[E1]];
       break;
     case G1:
       mType[F1] = Type::WhiteRook;
       mType[H1] = Type::None;
       mPiece[WhiteRook] ^= (ONE << F1);
       mPiece[WhiteRook] ^= (ONE << H1);
+      mRotateR90 ^= mMask[rotateL90Matrix[E1]] | mMask[rotateL90Matrix[F1]] | mMask[rotateL90Matrix[G1]] | mMask[rotateL90Matrix[H1]];
+      mRotateR45 ^= mMask[mInvRotR45[E1]] | mMask[mInvRotR45[F1]] | mMask[mInvRotR45[G1]] | mMask[mInvRotR45[H1]];
+      mRotateL45 ^= mMask[mInvRotL45[E1]] | mMask[mInvRotL45[F1]] | mMask[mInvRotL45[G1]] | mMask[mInvRotL45[H1]];
       break;
     case C8:
       mType[D8] = Type::BlackRook;
       mType[A8] = Type::None;
       mPiece[BlackRook] ^= (ONE << D8);
       mPiece[BlackRook] ^= (ONE << A8);
+      mRotateR90 ^= mMask[rotateL90Matrix[A8]] | mMask[rotateL90Matrix[C8]] | mMask[rotateL90Matrix[D8]] | mMask[rotateL90Matrix[E8]];
+      mRotateR45 ^= mMask[mInvRotR45[A8]] | mMask[mInvRotR45[C8]] | mMask[mInvRotR45[D8]] | mMask[mInvRotR45[E8]];
+      mRotateL45 ^= mMask[mInvRotL45[A8]] | mMask[mInvRotL45[C8]] | mMask[mInvRotL45[D8]] | mMask[mInvRotL45[E8]];
       break;
     case G8:
       mType[F8] = Type::BlackRook;
       mType[H8] = Type::None;
       mPiece[BlackRook] ^= (ONE << F8);
       mPiece[BlackRook] ^= (ONE << H8);
+      mRotateR90 ^= mMask[rotateL90Matrix[E8]] | mMask[rotateL90Matrix[F8]] | mMask[rotateL90Matrix[G8]] | mMask[rotateL90Matrix[H8]];
+      mRotateR45 ^= mMask[mInvRotR45[E8]] | mMask[mInvRotR45[F8]] | mMask[mInvRotR45[G8]] | mMask[mInvRotR45[H8]];
+      mRotateL45 ^= mMask[mInvRotL45[E8]] | mMask[mInvRotL45[F8]] | mMask[mInvRotL45[G8]] | mMask[mInvRotL45[H8]];
       break;
     }
   }
 
+  // Update rotated bitboards
+  if (!move.isCastle()) {
+    mRotateR90 &= mInvMask[rotateL90Matrix[fromSquare]];
+    mRotateR90 |= mMask[rotateL90Matrix[toSquare]];
+    mRotateR45 &= mInvMask[mInvRotR45[fromSquare]];
+    mRotateR45 |= mMask[mInvRotR45[toSquare]];
+    mRotateL45 &= mInvMask[mInvRotL45[fromSquare]];
+    mRotateL45 |= mMask[mInvRotL45[toSquare]];
+  }
   // Set the castling rights
   setCastlingRights(castling);
 
@@ -994,17 +1005,8 @@ void BitBoard::makeMove(const Move & move)
   if (move.piece() == Piece::Pawn || move.isCapture())
     setHalfMoveClock(0);
 
-  // Update rotated bitboards
-  //mRotateR90 &= mInvMask[rotateR90Matrix[fromSquare]];
-  //mRotateR90 |= mMask[rotateR90Matrix[toSquare]];
-  //mRotateR45 &= mInvMask[mInvRotR45[fromSquare]];
-  //mRotateR45 |= mMask[mInvRotR45[toSquare]];
-  //mRotateL45 &= mInvMask[mInvRotL45[fromSquare]];
-  //mRotateL45 |= mMask[mInvRotL45[toSquare]];
-
   // Update aggregate bitboards
   updateAggregateBitBoards();
-  updateRotatedBitBoards();
 
   // Switch side to move
   mSide = static_cast<Side>(!mSide);
@@ -1044,7 +1046,7 @@ PieceType BitBoard::pieceType(uchar row, uchar col) const
   return PieceType::None;
 }
 
-void BitBoard::pushBitBoardMoves(U64 bb, uchar fromSq, MoveList & moveList) const
+inline void BitBoard::pushBitBoardMoves(U64 bb, uchar fromSq, MoveList & moveList) const
 {
   while (bb) {
     int toSq = bitScanForward(bb);
@@ -1055,7 +1057,7 @@ void BitBoard::pushBitBoardMoves(U64 bb, uchar fromSq, MoveList & moveList) cons
   }
 }
 
-void BitBoard::pushMove(uchar from, uchar to, Type piece, Type capture, Type promote, Move::Type type, MoveList & moveList) const
+inline void BitBoard::pushMove(uchar from, uchar to, Type piece, Type capture, Type promote, Move::Type type, MoveList & moveList) const
 {
   Move move(getRow(from), getCol(from), getRow(to), getCol(to), mTypeToPiece[piece]);
   move.setCastlingRights(castlingRights());
@@ -1355,16 +1357,15 @@ void BitBoard::testRotations()
 
 void BitBoard::unmakeMove(const Move & move)
 {
-  // Get move information
-  Piece piece = move.piece();
-  uchar fromSquare = getIndex(move.sourceRow(), move.sourceCol());
-  uchar toSquare = getIndex(move.destRow(), move.destCol());
-  Type toPiece = mType[toSquare];
-
   Undo undo = mUndoStack[--mUndoPos];
   mRotateR90 = undo.rotate90;
   mRotateL45 = undo.rotateL45;
   mRotateR45 = undo.rotateR45;
+
+  // Get move information
+  uchar fromSquare = getIndex(move.sourceRow(), move.sourceCol());
+  uchar toSquare = getIndex(move.destRow(), move.destCol());
+  Type toPiece = mType[toSquare];
 
   // Calculate required bitboards
   U64 bbFrom = (ONE << fromSquare);
@@ -1408,7 +1409,7 @@ void BitBoard::unmakeMove(const Move & move)
   }
 
   // Handle king moves
-  if (piece == Piece::King) {
+  if (move.piece() == Piece::King) {
     setKingRow(!sideToMove(), move.sourceRow());
     setKingColumn(!sideToMove(), move.sourceCol());
   }
@@ -1473,7 +1474,7 @@ void BitBoard::unmakeMove(const Move & move)
   toggleSideToMove();
 }
 
-void BitBoard::updateAggregateBitBoards()
+inline void BitBoard::updateAggregateBitBoards()
 {
   mPiece[WhitePieces] = mPiece[WhiteRook] | mPiece[WhiteKnight] | mPiece[WhiteBishop] | mPiece[WhiteQueen] | mPiece[WhiteKing] | mPiece[WhitePawn];
   mPiece[BlackPieces] = mPiece[BlackRook] | mPiece[BlackKnight] | mPiece[BlackBishop] | mPiece[BlackQueen] | mPiece[BlackKing] | mPiece[BlackPawn];

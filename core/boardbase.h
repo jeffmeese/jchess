@@ -170,13 +170,11 @@ inline bool BoardBase::isWhiteToMove() const
 
 inline uchar BoardBase::kingColumn(Color color) const
 {
-  //return mKingCol[(color == Color::White) ? WHITE_INDEX : BLACK_INDEX];
   return mKingCol[static_cast<int>(color)];
 }
 
 inline uchar BoardBase::kingRow(Color color) const
 {
-  //return mKingRow[(color == Color::White) ? WHITE_INDEX : BLACK_INDEX];
   return mKingRow[static_cast<int>(color)];
 }
 
@@ -207,13 +205,11 @@ inline void BoardBase::setHalfMoveClock(uint value)
 
 inline void BoardBase::setKingColumn(Color color, uchar col)
 {
-  //mKingCol[(color == Color::White) ? WHITE_INDEX : BLACK_INDEX] = col;
   mKingCol[static_cast<int>(color)] = col;
 }
 
 inline void BoardBase::setKingRow(Color color, uchar row)
 {
-  //mKingRow[(color == Color::White) ? WHITE_INDEX : BLACK_INDEX] = row;
   mKingRow[static_cast<int>(color)] = row;
 }
 
