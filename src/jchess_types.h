@@ -1,12 +1,12 @@
-#ifndef TYPES_H
-#define TYPES_H
+#ifndef JCHESS_TYPES_H
+#define JCHESS_TYPES_H
 
-typedef unsigned char uchar;
-typedef unsigned int uint;
-typedef unsigned long ulong;
-typedef unsigned long long ulonglong;
+#include <cstdint>
 
-enum class Color
+namespace jchess
+{
+
+enum class Color : int32_t
 {
   White = 0,
   Black = 1,
@@ -18,7 +18,7 @@ inline Color operator!(Color color)
   return (color == Color::White) ? Color::Black : Color::White;
 }
 
-enum class Piece
+enum class Piece : int32_t
 {
   None = 0,
   King,
@@ -29,7 +29,7 @@ enum class Piece
   Pawn
 };
 
-enum class PieceType
+enum class PieceType : int32_t
 {
   None = 0,
   WhitePawn = 1,
@@ -46,4 +46,6 @@ enum class PieceType
   BlackKing = -6
 };
 
-#endif // TYPES_H
+}
+
+#endif // #ifndef JCHESS_TYPES_H
