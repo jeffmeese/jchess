@@ -1,8 +1,8 @@
-#include "jchess_board.h"
+#include "jcl_board.h"
 
-#include "jchess_consts.h"
+#include "jcl_consts.h"
 
-namespace jchess
+namespace jcl
 {
 
 Board::Board()
@@ -16,6 +16,7 @@ void Board::init()
   mEnPassantColumn = INVALID_ENPASSANT_COLUMN;
   mHalfMoveClock = 0;
   mFullMoveCounter = 1;
+  mSideToMove = Color::White;
 }
 
 void Board::reset()

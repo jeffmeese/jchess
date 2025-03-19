@@ -1,14 +1,15 @@
-set(TARGET_NAME jchess)
+set(TARGET_NAME jcl)
 set(BUILD_TYPE STATIC)
 
 set(HDR_FILES
-    jchess_board.h
-    jchess_board8x8.h
-    jchess_consts.h
-    jchess_fen.h
-    jchess_move.h
-    jchess_movelist.h
-    jchess_types.h
+    jcl_board.h
+    jcl_board8x8.h
+    jcl_consts.h
+    jcl_fen.h
+    jcl_move.h
+    jcl_movelist.h
+    jcl_timer.h
+    jcl_types.h
     #alphabetasearch.h
     #bitboard.h
     #board.h
@@ -33,11 +34,12 @@ set(HDR_FILES
 
 # Add source files
 set(SRC_FILES
-    jchess_board.cpp
-    jchess_board8x8.cpp
-    jchess_fen.cpp
-    jchess_move.cpp
-    jchess_movelist.cpp
+    jcl_board.cpp
+    jcl_board8x8.cpp
+    jcl_fen.cpp
+    jcl_move.cpp
+    jcl_movelist.cpp
+    jcl_timer.cpp
     #alphabetasearch.cpp
     #bitboard.cpp
     #board0x88.cpp

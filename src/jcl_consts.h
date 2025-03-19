@@ -1,9 +1,9 @@
-#ifndef JCHESS_CONSTS_H
-#define JCHESS_CONSTS_H
+#ifndef JCL_CONSTS_H
+#define JCL_CONSTS_H
 
 #include <cstdint>
 
-namespace jchess
+namespace jcl
 {
 
 constexpr uint8_t CASTLE_NONE        = 0x00;
@@ -15,4 +15,4 @@ constexpr uint8_t INVALID_ENPASSANT_COLUMN = 8;
 
 }
 
-#endif // #ifndef JCHESS_CONSTS_H
+#endif // #ifndef JCL_CONSTS_H

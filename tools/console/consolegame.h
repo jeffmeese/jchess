@@ -1,16 +1,16 @@
 #ifndef CONSOLEGAME_H
 #define CONSOLEGAME_H
 
-#include "jchess_board.h"
+#include "jcl_board.h"
 //#include "engine.h"
-#include "jchess_types.h"
+#include "jcl_types.h"
 
 class ConsoleGame
     //: public Game
 {
 public:
   //ConsoleGame(Board * board, Engine * engine);
-  ConsoleGame(jchess::Board * board);
+  ConsoleGame(jcl::Board * board);
 
 public:
   void run();
@@ -29,7 +29,7 @@ private:
   // void handlePerft(std::istringstream & iss) const;
   void handlePrint() const;
   // void handleSetBoard(std::istringstream & iss);
-  // void handleShow() const;
+  void handleShow() const;
   // void handleSinglePlayer();
   // void handleTable(std::istringstream & iss) const;
   // void handleTestMoveGen() const;
@@ -40,7 +40,7 @@ private:
   // void showEndGame();
 
 private:
-  jchess::Board * mBoard;
+  jcl::Board * mBoard;
   //Engine * mEngine;
 };
 

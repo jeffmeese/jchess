@@ -1,11 +1,11 @@
-#ifndef JCHESS_BOARD_H
-#define JCHESS_BOARD_H
+#ifndef JCL_BOARD_H
+#define JCL_BOARD_H
 
-#include "jchess_move.h"
-#include "jchess_movelist.h"
-#include "jchess_types.h"
+#include "jcl_move.h"
+#include "jcl_movelist.h"
+#include "jcl_types.h"
 
-namespace jchess
+namespace jcl
 {
 
 class Board
@@ -99,4 +99,4 @@ inline void Board::setSideToMove(Color value)
 
 }
 
-#endif // #ifndef JCHESS_BOARD_H
+#endif // #ifndef JCL_BOARD_H

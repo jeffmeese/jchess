@@ -1,8 +1,8 @@
-#include "jchess_move.h"
+#include "jcl_move.h"
 
 #include <sstream>
 
-namespace jchess
+namespace jcl
 {
 
 Move::Move(uint8_t sourceRow, uint8_t sourceCol, uint8_t destRow, uint8_t destCol, Piece piece)

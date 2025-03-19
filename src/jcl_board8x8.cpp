@@ -1,15 +1,15 @@
-#include "jchess_board8x8.h"
+#include "jcl_board8x8.h"
 
 #include <iostream>
 
-#include "jchess_fen.h"
-#include "jchess_movelist.h"
+#include "jcl_fen.h"
+#include "jcl_movelist.h"
 
 #define getIndex(row,col) (((row)<<3)+(col))
 #define getRow(index) ( (index >> 3) )
 #define getCol(index) ( (index % 8) )
 
-namespace jchess
+namespace jcl
 {
 
 constexpr uint8_t INVALID_SQUARE = 64;
@@ -30,20 +30,104 @@ enum Square
   A8=56 , B8, C8, D8, E8, F8, G8, H8
 };
 
+constexpr int8_t NUM_PAWN_DIRECTIONS    = 4;
+constexpr int8_t NUM_ROOK_DIRECTIONS    = 4;
+constexpr int8_t NUM_BISHOP_DIRECTIONS  = 4;
+constexpr int8_t NUM_QUEEN_DIRECTIONS   = 8;
+constexpr int8_t NUM_KING_DIRECTIONS    = 8;
+constexpr int8_t NUM_KNIGHT_DIRECTIONS  = 8;
+
+constexpr int8_t WHITE_PAWN_DIRECTIONS[] = {NORTH, NORTH+NORTH, NORTH+EAST, NORTH+WEST};
+constexpr int8_t BLACK_PAWN_DIRECTIONS[] = {SOUTH, SOUTH+SOUTH, SOUTH+EAST, SOUTH+WEST};
+constexpr int8_t ROOK_DIRECTIONS[]       = {NORTH, SOUTH, EAST, WEST};
+constexpr int8_t BISHOP_DIRECTIONS[]     = {NORTH+EAST, NORTH+WEST, SOUTH+EAST, SOUTH+WEST};
+constexpr int8_t QUEEN_DIRECTIONS[]      = {NORTH, SOUTH, EAST, WEST, NORTH+EAST, NORTH+WEST, SOUTH+EAST, SOUTH+WEST};
+constexpr int8_t KING_DIRECTIONS[]       = {NORTH, SOUTH, EAST, WEST, NORTH+EAST, NORTH+WEST, SOUTH+EAST, SOUTH+WEST};
+constexpr int8_t KNIGHT_DIRECTIONS[]     = {NORTH+NORTH+EAST, NORTH+NORTH+WEST, EAST+NORTH+EAST, WEST+NORTH+WEST,
+                                            SOUTH+SOUTH+EAST, SOUTH+SOUTH+WEST, EAST+SOUTH+EAST, WEST+SOUTH+WEST};
+
 Board8x8::Board8x8()
 {
   initBoard();
+  initMoves();
+}
+
+void Board8x8::generateCastlingMoves(MoveList & moveList) const
+{
+  Color sideToMove = this->getSideToMove();
+  uint8_t castlingRights = this->getCastlingRights();
+
+  if (sideToMove == Color::White)
+  {
+    bool b1Empty = mPieces[Square::B1] == Piece::None;
+    bool c1Empty = mPieces[Square::C1] == Piece::None;
+    bool d1Empty = mPieces[Square::D1] == Piece::None;
+    bool f1Empty = mPieces[Square::F1] == Piece::None;
+    bool g1Empty = mPieces[Square::G1] == Piece::None;
+
+    bool c1Attack = isCellAttacked(Square::C1, Color::Black);
+    bool d1Attack = isCellAttacked(Square::D1, Color::Black);
+    bool e1Attack = isCellAttacked(Square::E1, Color::Black);
+    bool f1Attack = isCellAttacked(Square::F1, Color::Black);
+    bool g1Attack = isCellAttacked(Square::G1, Color::Black);
+
+    if (castlingRights & CASTLE_WHITE_KING)
+    {
+      if (f1Empty && g1Empty && !e1Attack && !f1Attack && !g1Attack)
+      {
+        pushMove(E1, G1, Piece::King, Piece::None, Piece::None, Move::Type::Castle, moveList);
+      }
+    }
+
+    if (castlingRights & CASTLE_WHITE_QUEEN)
+    {
+      if (b1Empty && c1Empty && d1Empty && !e1Attack && !d1Attack && !c1Attack)
+      {
+        pushMove(E1, C1, Piece::King, Piece::None, Piece::None, Move::Type::Castle, moveList);
+      }
+    }
+  }
+  else
+  {
+    bool b8Empty = mPieces[Square::B8] == Piece::None;
+    bool c8Empty = mPieces[Square::C8] == Piece::None;
+    bool d8Empty = mPieces[Square::D8] == Piece::None;
+    bool f8Empty = mPieces[Square::F8] == Piece::None;
+    bool g8Empty = mPieces[Square::G8] == Piece::None;
+
+    bool c8Attack = isCellAttacked(Square::C8, Color::White);
+    bool d8Attack = isCellAttacked(Square::D8, Color::White);
+    bool e8Attack = isCellAttacked(Square::E8, Color::White);
+    bool f8Attack = isCellAttacked(Square::F8, Color::White);
+    bool g8Attack = isCellAttacked(Square::G8, Color::White);
+
+    if (castlingRights & CASTLE_BLACK_KING)
+    {
+      if (f8Empty && g8Empty && !e8Attack && !f8Attack && !g8Attack)
+      {
+        pushMove(E8, G8, Piece::King, Piece::None, Piece::None, Move::Type::Castle, moveList);
+      }
+    }
+
+    if (castlingRights & CASTLE_BLACK_QUEEN)
+    {
+      if (b8Empty && c8Empty && d8Empty && !e8Attack && !c8Attack && !d8Attack)
+      {
+        pushMove(E8, C8, Piece::King, Piece::None, Piece::None, Move::Type::Castle, moveList);
+      }
+    }
+  }
 }
 
 bool Board8x8::generateMoves(MoveList & moveList) const
 {
-  for (uint8_t index = 0; index < 64; index++)
+  generateCastlingMoves(moveList);
+
+  for (int8_t row = 0; row < 8; row++)
   {
-    Piece piece = mPieces[index];
-    Color color = mColors[index];
-    if (piece != Piece::None && color == this->getSideToMove())
+    for (int8_t col = 0; col < 8; col++)
     {
-      generateMoves(index, moveList);
+      generateMoves(row, col, moveList, false);
     }
   }
   return true;
@@ -51,34 +135,239 @@ bool Board8x8::generateMoves(MoveList & moveList) const
 
 bool Board8x8::generateMoves(uint8_t row, uint8_t col, MoveList & moveList) const
 {
+  return generateMoves(row, col, moveList, true);
+}
+
+bool Board8x8::generateMoves(uint8_t row, uint8_t col, MoveList & moveList, bool generateCastling) const
+{
   uint8_t index = getIndex(row, col);
-  return generateMoves(index, moveList);
+  Piece piece = mPieces[index];
+  Color color = mColors[index];
+  Color sideToMove = this->getSideToMove();
+
+  if (generateCastling)
+  {
+    generateCastlingMoves(moveList);
+  }
+
+  if (piece != Piece::None && color == sideToMove)
+  {
+    if (piece == Piece::Bishop)
+    {
+      generateSliderMoves(index, +1, +1, true, moveList);
+      generateSliderMoves(index, +1, -1, true, moveList);
+      generateSliderMoves(index, -1, +1, true, moveList);
+      generateSliderMoves(index, -1, -1, true, moveList);
+    }
+    else if (piece == Piece::Rook)
+    {
+      generateSliderMoves(index, +1, +0, true, moveList);
+      generateSliderMoves(index, -1, +0, true, moveList);
+      generateSliderMoves(index, +0, +1, true, moveList);
+      generateSliderMoves(index, +0, -1, true, moveList);
+    }
+    else if (piece == Piece::Queen)
+    {
+      generateSliderMoves(index, +1, +1, true, moveList);
+      generateSliderMoves(index, +1, -1, true, moveList);
+      generateSliderMoves(index, -1, +1, true, moveList);
+      generateSliderMoves(index, -1, -1, true, moveList);
+      generateSliderMoves(index, +1, +0, true, moveList);
+      generateSliderMoves(index, -1, +0, true, moveList);
+      generateSliderMoves(index, +0, +1, true, moveList);
+      generateSliderMoves(index, +0, -1, true, moveList);
+    }
+    else if (piece == Piece::King)
+    {
+      generateSliderMoves(index, +1, +1, false, moveList);
+      generateSliderMoves(index, +1, -1, false, moveList);
+      generateSliderMoves(index, -1, +1, false, moveList);
+      generateSliderMoves(index, -1, -1, false, moveList);
+      generateSliderMoves(index, +1, +0, false, moveList);
+      generateSliderMoves(index, -1, +0, false, moveList);
+      generateSliderMoves(index, +0, +1, false, moveList);
+      generateSliderMoves(index, +0, -1, false, moveList);
+    }
+    else if (piece == Piece::Knight)
+    {
+      generateSliderMoves(index, +2, +1, false, moveList);
+      generateSliderMoves(index, +2, -1, false, moveList);
+      generateSliderMoves(index, +1, -2, false, moveList);
+      generateSliderMoves(index, -1, -2, false, moveList);
+      generateSliderMoves(index, -2, -1, false, moveList);
+      generateSliderMoves(index, -2, +1, false, moveList);
+      generateSliderMoves(index, -1, +2, false, moveList);
+      generateSliderMoves(index, +1, +2, false, moveList);
+    }
+    else if (piece == Piece::Pawn)
+    {
+      generatePawnMoves(index, sideToMove, moveList);
+    }
+  }
+
+  return true;
+}
+
+void Board8x8::generateSliderMoves(uint8_t index,
+                                   int8_t rowIncrement,
+                                   int8_t colIncrement,
+                                   bool slider,
+                                   MoveList & moveList) const
+{
+  Piece piece = mPieces[index];
+  Color sideToMove = this->getSideToMove();
+  Color otherSide = (sideToMove == Color::White) ? Color::Black : Color::White;
+  uint8_t row = getRow(index);
+  uint8_t col = getCol(index);
+
+  int8_t destRow = row + rowIncrement;
+  int8_t destCol = col + colIncrement;
+  while (true)
+  {
+    if ( (rowIncrement < 0 && destRow < 0) || (rowIncrement > 0 && destRow > 7) )
+    {
+      break;
+    }
+
+    if ( (colIncrement < 0 && destCol < 0) || (colIncrement > 0 && destCol > 7) )
+    {
+      break;
+    }
+
+    uint8_t destIndex = getIndex(destRow, destCol);
+    Piece destPiece = mPieces[destIndex];
+    Color destColor = mColors[destIndex];
+    if (destPiece == Piece::None)
+    {
+      pushMove(index, destIndex, piece, Piece::None, Piece::None, Move::Type::Quiet, moveList);
+    }
+    else if (destColor == otherSide)
+    {
+      pushMove(index, destIndex, piece, destPiece, Piece::None, Move::Type::Capture, moveList);
+    }
+    else if (destColor == sideToMove)
+    {
+      break;
+    }
+
+    if (!slider)
+    {
+      break;
+    }
+
+    destRow += rowIncrement;
+    destCol += colIncrement;
+  }
 }
 
 bool Board8x8::generateMoves(uint8_t index, MoveList & moveList) const
 {
-  Piece piece = mPieces[index];
-  Color color = mColors[index];
+  // Piece piece = mPieces[index];
+  // Color color = mColors[index];
 
-  switch (piece)
-  {
-  case Piece::Pawn:
-    break;
-  case Piece::Rook:
-    break;
-  case Piece::Bishop:
-    break;
-  case Piece::Knight:
-    break;
-  case Piece::Queen:
-    break;
-  case Piece::King:
-    break;
-  default:
-    break;
-  }
+  // for (uint8_t i = 0; i < 64; i++)
+  // {
+  //   if (piece == Piece::Bishop)
+  //   {
+  //     for (uint8_t j = 0; j < NUM_BISHOP_DIRECTIONS; j++)
+  //     {
+  //       int8_t direction = BISHOP_DIRECTIONS[j];
+  //       uint8_t destIndex = index + direction;
+  //       while (mBishopMoves[destIndex][j] != INVALID_SQUARE)
+  //       {
+
+  //       }
+  //     }
+  //   }
+  // }
+  // switch (piece)
+  // {
+  // case Piece::Pawn:
+  //   generatePawnMoves(index, color, moveList);
+  //   break;
+  // case Piece::Rook:
+  //   break;
+  // case Piece::Bishop:
+  //   break;
+  // case Piece::Knight:
+  //   break;
+  // case Piece::Queen:
+  //   break;
+  // case Piece::King:
+  //   break;
+  // default:
+  //   break;
+  // }
 
   return true;
+}
+
+void Board8x8::generatePawnMoves(uint8_t index, Color sideToMove, MoveList & moveList) const
+{
+  Color otherSide = (sideToMove == Color::White) ? Color::Black : Color::White;
+  int8_t row = getRow(index);
+  int8_t col = getCol(index);
+  int8_t rowIncr = (sideToMove == Color::White) ? +1 : -1;
+  int8_t startRow = (sideToMove == Color::White) ? 1 : 6;
+  int8_t singlePushRow = row + rowIncr;
+  int8_t doublePushRow = singlePushRow + rowIncr;
+
+  // WTF?
+  if (row == 0 || row == 8)
+  {
+    return;
+  }
+
+  // Generate standard moves
+  uint8_t destIndex = getIndex(singlePushRow, col);
+  if (mPieces[destIndex] == Piece::None)
+  {
+    if (singlePushRow == 0 || singlePushRow == 7)
+    {
+      pushMove(index, destIndex, Piece::Pawn, Piece::None, Piece::Bishop, Move::Type::Promotion, moveList);
+      pushMove(index, destIndex, Piece::Pawn, Piece::None, Piece::Knight, Move::Type::Promotion, moveList);
+      pushMove(index, destIndex, Piece::Pawn, Piece::None, Piece::Rook, Move::Type::Promotion, moveList);
+      pushMove(index, destIndex, Piece::Pawn, Piece::None, Piece::Queen, Move::Type::Promotion, moveList);
+    }
+    else
+    {
+      pushMove(index, destIndex, Piece::Pawn, Piece::None, Piece::None, Move::Type::Quiet, moveList);
+    }
+
+    if (row == startRow)
+    {
+      destIndex = getIndex(doublePushRow, col);
+      if (mPieces[destIndex] == Piece::None)
+      {
+        pushMove(index, destIndex, Piece::Pawn, Piece::None, Piece::None, Move::Type::EpPush, moveList);
+      }
+    }
+  }
+
+  // Generate capture moves
+  int8_t cols[] = {1, -1};
+  for (int8_t i = 0; i < 2; i++)
+  {
+    int8_t destCol = col + cols[i];
+    if (destCol >= 0 && destCol <= 7)
+    {
+      uint8_t destIndex = getIndex(singlePushRow, destCol);
+      if (mPieces[destIndex] != Piece::None && mColors[destIndex] == otherSide)
+      {
+        if (singlePushRow == 0 || singlePushRow == 7)
+        {
+          pushMove(index, destIndex, Piece::Pawn, Piece::None, Piece::Bishop, Move::Type::PromotionCapture, moveList);
+          pushMove(index, destIndex, Piece::Pawn, Piece::None, Piece::Knight, Move::Type::PromotionCapture, moveList);
+          pushMove(index, destIndex, Piece::Pawn, Piece::None, Piece::Rook, Move::Type::PromotionCapture, moveList);
+          pushMove(index, destIndex, Piece::Pawn, Piece::None, Piece::Queen, Move::Type::PromotionCapture, moveList);
+        }
+        else
+        {
+          pushMove(index, destIndex, Piece::Pawn, Piece::None, Piece::None, Move::Type::Capture, moveList);
+        }
+      }
+    }
+  }
 }
 
 PieceType Board8x8::getPieceType(uint8_t row, uint8_t col) const
@@ -142,6 +431,145 @@ void Board8x8::initBoard()
   mKingRow[Color::White] = 0;
   mKingColumn[Color::Black] = 4;
   mKingRow[Color::Black] = 7;
+
+  setPosition("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2");
+}
+
+void Board8x8::initMoves()
+{
+  for (int8_t i = 0; i < 64; i++)
+  {
+    for (int8_t j = 0; j < 4; j++)
+    {
+      mWhitePawnMoves[i][j] = INVALID_SQUARE;
+      mBlackPawnMoves[i][j] = INVALID_SQUARE;
+      mBishopMoves[i][j] = INVALID_SQUARE;
+      mRookMoves[i][j] = INVALID_SQUARE;
+    }
+
+    for (int8_t j = 0; j < 8; j++)
+    {
+      mQueenMoves[i][j] = INVALID_SQUARE;
+    }
+  }
+
+  for (int8_t i = 0; i < 64; i++)
+  {
+    uint8_t row = getRow(i);
+    uint8_t col = getCol(i);
+    for (int8_t j = 0; j < 4; j++)
+    {
+      int8_t direction = WHITE_PAWN_DIRECTIONS[j];
+      if (direction == NORTH)
+      {
+        if (row < 7)
+        {
+          mWhitePawnMoves[i][j] = i + NORTH;
+        }
+      }
+      else if (direction == NORTH+NORTH)
+      {
+        if (row < 6)
+        {
+          mWhitePawnMoves[i][j] = i + NORTH + NORTH;
+        }
+      }
+      else if (direction == NORTH + EAST)
+      {
+        if (col < 7 && row < 7)
+        {
+          mWhitePawnMoves[i][j] = i + NORTH + EAST;
+        }
+      }
+      else if (direction == NORTH + WEST)
+      {
+        if (col > 0 && row < 7)
+        {
+          mWhitePawnMoves[i][j] = i + NORTH + WEST;
+        }
+      }
+    }
+  }
+
+  for (uint8_t index = 0; index < 64; index++)
+  {
+    uint8_t row = getRow(index);
+    uint8_t col = getCol(index);
+
+    for (uint8_t k = 0; k < NUM_QUEEN_DIRECTIONS; k++)
+    {
+      int8_t direction = QUEEN_DIRECTIONS[k];
+
+      if (direction == NORTH+EAST)
+      {
+        int8_t destRow = row;
+        int8_t destCol = col;
+        while (destRow <= 7 && destCol <= 7)
+        {
+          uint8_t destIndex = getIndex(destRow, destCol);
+          mBishopMoves[index][0] = destIndex;
+          mQueenMoves[index][k] = destIndex;
+          destRow++;
+          destCol++;
+        }
+      }
+      else if (direction == NORTH+WEST)
+      {
+        int8_t destRow = row;
+        int8_t destCol = col;
+        while (destRow <= 7 && destCol >= 0)
+        {
+          uint8_t destIndex = getIndex(destRow, destCol);
+          mBishopMoves[index][1] = destIndex;
+          mQueenMoves[index][k] = destIndex;
+          destRow++;
+          destCol--;
+        }
+      }
+      else if (direction == SOUTH+EAST)
+      {
+        int8_t destRow = row;
+        int8_t destCol = col;
+        while (destRow >= 0 && destCol <= 7)
+        {
+          uint8_t destIndex = getIndex(destRow, destCol);
+          mBishopMoves[index][2] = destIndex;
+          mQueenMoves[index][k] = destIndex;
+          destRow--;
+          destCol++;
+        }
+      }
+      else if (direction == SOUTH+WEST)
+      {
+        int8_t destRow = row;
+        int8_t destCol = col;
+        while (destRow >= 0 && destCol >= 0)
+        {
+          uint8_t destIndex = getIndex(destRow, destCol);
+          mBishopMoves[index][3] = destIndex;
+          mQueenMoves[index][k] = destIndex;
+          destRow--;
+          destCol--;
+        }
+      }
+      else if (direction == NORTH)
+      {
+
+      }
+      else if (direction == SOUTH)
+      {
+
+      }
+      else if (direction == EAST)
+      {
+
+      }
+      else if (direction == WEST)
+      {
+
+      }
+    }
+  }
 }
 
 void Board8x8::doReset()
@@ -150,6 +578,11 @@ void Board8x8::doReset()
 }
 
 bool Board8x8::isCellAttacked(uint8_t row, uint8_t col, Color attackColor) const
+{
+  return isCellAttacked(getIndex(row, col), attackColor);
+}
+
+bool Board8x8::isCellAttacked(uint8_t index, Color attackColor) const
 {
   return false;
 }
@@ -292,8 +725,8 @@ void Board8x8::pushMove(uint8_t from, uint8_t to, Piece piece, Piece capturedPie
 {
   uint8_t sourceRow = getRow(from);
   uint8_t sourceColumn = getCol(from);
-  uint8_t destRow = getRow(from);
-  uint8_t destCol = getCol(from);
+  uint8_t destRow = getRow(to);
+  uint8_t destCol = getCol(to);
 
   std::unique_ptr<Move> newMove(new Move(sourceRow, sourceColumn, destRow, destCol, piece));
   newMove->setCapturedPiece(capturedPiece);

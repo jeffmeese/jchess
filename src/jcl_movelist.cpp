@@ -1,10 +1,10 @@
-#include "jchess_movelist.h"
+#include "jcl_movelist.h"
 
 #include <iostream>
 
-#include "jchess_move.h"
+#include "jcl_move.h"
 
-namespace jchess
+namespace jcl
 {
 
 MoveList::MoveList()

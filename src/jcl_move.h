@@ -1,12 +1,12 @@
-#ifndef JCHESS_MOVE_H
-#define JCHESS_MOVE_H
+#ifndef JCL_MOVE_H
+#define JCL_MOVE_H
 
-#include "jchess_consts.h"
-#include "jchess_types.h"
+#include "jcl_consts.h"
+#include "jcl_types.h"
 
 #include <string>
 
-namespace jchess
+namespace jcl
 {
 
 class Move
@@ -228,4 +228,4 @@ inline void Move::setSourceRow(uint8_t row)
 
 }
 
-#endif // #ifndef JCHESS_MOVE_H
+#endif // #ifndef JCL_MOVE_H

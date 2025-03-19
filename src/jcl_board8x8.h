@@ -1,12 +1,12 @@
-#ifndef JCHESS_BOARD8X8_H
-#define JCHESS_BOARD8X8_H
+#ifndef JCL_BOARD8X8_H
+#define JCL_BOARD8X8_H
 
 #include <map>
 
-#include "jchess_board.h"
-#include "jchess_move.h"
+#include "jcl_board.h"
+#include "jcl_move.h"
 
-namespace jchess
+namespace jcl
 {
 
 class MoveList;
@@ -41,15 +41,43 @@ protected:
 private:
 
   // Implementation
-  bool generateMoves(uint8_t index, MoveList & moveList) const;
+  void generateCastlingMoves(MoveList & moveList) const;
+
+  bool generateMoves(uint8_t row, uint8_t col, MoveList & moveList, bool generateCastling) const;
+
+  bool generateMoves(uint8_t index,
+                     MoveList & moveList) const;
+
+  void generatePawnMoves(uint8_t index,
+                         Color sideToMove,
+                         MoveList & moveList) const;
+
+  void generateSliderMoves(uint8_t index,
+                           int8_t rowIncrement,
+                           int8_t colIncrement,
+                           bool slider,
+                           MoveList & moveList) const;
   void initBoard();
-  void pushMove(uint8_t from, uint8_t to, Piece piece, Piece capturedPiece, Piece promotedPiece, Move::Type type, MoveList & moveList) const;
+  void initMoves();
+  bool isCellAttacked(uint8_t index, Color attackColor) const;
+  void pushMove(uint8_t from,
+                uint8_t to,
+                Piece piece,
+                Piece capturedPiece,
+                Piece promotedPiece,
+                Move::Type type,
+                MoveList & moveList) const;
 
   // Members
   Piece mPieces[64];
   Color mColors[64];
   std::map<Color, uint8_t> mKingColumn;
   std::map<Color, uint8_t> mKingRow;
+  uint8_t mWhitePawnMoves[64][4];
+  uint8_t mBlackPawnMoves[64][4];
+  uint8_t mBishopMoves[64][4];
+  uint8_t mQueenMoves[64][8];
+  uint8_t mRookMoves[64][4];
 
   // Methods
 //public:
@@ -102,4 +130,4 @@ private:
 
 }
 
-#endif // #ifndef JCHESS_BOARD8X8_H
+#endif // #ifndef JCL_BOARD8X8_H

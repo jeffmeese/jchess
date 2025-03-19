@@ -1,12 +1,12 @@
-#ifndef JCHESS_MOVELIST_H
-#define JCHESS_MOVELIST_H
+#ifndef JCL_MOVELIST_H
+#define JCL_MOVELIST_H
 
 #include <memory>
 #include <vector>
 
-#include "jchess_move.h"
+#include "jcl_move.h"
 
-namespace jchess
+namespace jcl
 {
 
 class MoveList
@@ -36,4 +36,4 @@ private:
 
 }
 
-#endif // #ifndef JCHESS_MOVELIST_H
+#endif // #ifndef JCL_MOVELIST_H

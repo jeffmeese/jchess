@@ -4,12 +4,12 @@
 //#include <stdexcept>
 #include <memory>
 
-#include "jchess_board8x8.h"
+#include "jcl_board8x8.h"
 #include "consolegame.h"
 
 int main(int argc, char ** argv)
 {
-  std::unique_ptr<jchess::Board8x8> board(new jchess::Board8x8);
+  std::unique_ptr<jcl::Board8x8> board(new jcl::Board8x8);
   std::unique_ptr<ConsoleGame> game(new ConsoleGame(board.get()));
   game->run();
 

@@ -1,11 +1,11 @@
-#include "jchess_fen.h"
+#include "jcl_fen.h"
 
 #include <map>
 #include <iostream>
 #include <sstream>
 #include <vector>
 
-namespace jchess
+namespace jcl
 {
 
 std::vector<std::string> splitString(const std::string & s, const std::string & delim = " ")

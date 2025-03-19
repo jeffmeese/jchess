@@ -1,12 +1,12 @@
-#ifndef JCHESS_FEN_H
-#define JCHESS_FEN_H
+#ifndef JCL_FEN_H
+#define JCL_FEN_H
 
 #include <string>
 
-#include "jchess_board.h"
-#include "jchess_types.h"
+#include "jcl_board.h"
+#include "jcl_types.h"
 
-namespace jchess
+namespace jcl
 {
 
 class Fen
@@ -44,4 +44,4 @@ private:
 
 }
 
-#endif // #ifndef JCHESS_FEN_H
+#endif // #ifndef JCL_FEN_H

@@ -5,20 +5,21 @@
 #include <map>
 #include <sstream>
 
-#include "jchess_board.h"
-#include "jchess_consts.h"
+#include "jcl_board.h"
+#include "jcl_consts.h"
 //#include "engine.h"
 //#include "evaluation.h"
-#include "jchess_fen.h"
-//#include "jchess_move.h"
-#//include "jchess_movelist.h"
+#include "jcl_fen.h"
+//#include "JCL_move.h"
+#//include "JCL_movelist.h"
 //#include "perft.h"
 //#include "search.h"
 //#include "timer.h"
-#include "jchess_types.h"
+#include "jcl_timer.h"
+#include "jcl_types.h"
 //#include "util.h"
 
-ConsoleGame::ConsoleGame(jchess::Board * board)
+ConsoleGame::ConsoleGame(jcl::Board * board)
     : mBoard(board)
 {
 }
@@ -48,6 +49,10 @@ void ConsoleGame::run()
     else if (commandString == "print")
     {
       handlePrint();
+    }
+    else if (commandString == "show")
+    {
+      handleShow();
     }
 
     // else if (commandString == "divide")
@@ -108,20 +113,20 @@ void ConsoleGame::handleHelp() const
 
 void ConsoleGame::handlePrint() const
 {
-  std::map<jchess::PieceType, std::string> pieceMap;
-  pieceMap[jchess::PieceType::None] = std::string("   ");
-  pieceMap[jchess::PieceType::WhitePawn] = std::string(" P ");
-  pieceMap[jchess::PieceType::WhiteRook] = std::string(" R ");
-  pieceMap[jchess::PieceType::WhiteKnight] = std::string(" N ");
-  pieceMap[jchess::PieceType::WhiteBishop] = std::string(" B ");
-  pieceMap[jchess::PieceType::WhiteQueen] = std::string(" Q ");
-  pieceMap[jchess::PieceType::WhiteKing] = std::string("[K]");
-  pieceMap[jchess::PieceType::BlackPawn] = std::string(" p ");
-  pieceMap[jchess::PieceType::BlackRook] = std::string(" r ");
-  pieceMap[jchess::PieceType::BlackKnight] = std::string(" n ");
-  pieceMap[jchess::PieceType::BlackBishop] = std::string(" b ");
-  pieceMap[jchess::PieceType::BlackQueen] = std::string(" q ");
-  pieceMap[jchess::PieceType::BlackKing] = std::string("[k]");
+  std::map<jcl::PieceType, std::string> pieceMap;
+  pieceMap[jcl::PieceType::None] = std::string("   ");
+  pieceMap[jcl::PieceType::WhitePawn] = std::string(" P ");
+  pieceMap[jcl::PieceType::WhiteRook] = std::string(" R ");
+  pieceMap[jcl::PieceType::WhiteKnight] = std::string(" N ");
+  pieceMap[jcl::PieceType::WhiteBishop] = std::string(" B ");
+  pieceMap[jcl::PieceType::WhiteQueen] = std::string(" Q ");
+  pieceMap[jcl::PieceType::WhiteKing] = std::string("[K]");
+  pieceMap[jcl::PieceType::BlackPawn] = std::string(" p ");
+  pieceMap[jcl::PieceType::BlackRook] = std::string(" r ");
+  pieceMap[jcl::PieceType::BlackKnight] = std::string(" n ");
+  pieceMap[jcl::PieceType::BlackBishop] = std::string(" b ");
+  pieceMap[jcl::PieceType::BlackQueen] = std::string(" q ");
+  pieceMap[jcl::PieceType::BlackKing] = std::string("[k]");
 
   std::ostringstream output;
   output << "\n";
@@ -130,24 +135,24 @@ void ConsoleGame::handlePrint() const
     output << row + 1 << "|";
 
     for (int col = 0; col < 8; col++) {
-      jchess::PieceType type = mBoard->getPieceType(row, col);
+      jcl::PieceType type = mBoard->getPieceType(row, col);
       output << pieceMap[type];
       output << "|";
 
       if (col == 7) {
         if (row == 7)
-          output << " To Move: " << ( mBoard->getSideToMove() == jchess::Color::White ? "White" : "Black");
+          output << " To Move: " << ( mBoard->getSideToMove() == jcl::Color::White ? "White" : "Black");
 
         if (row == 6) {
           uint8_t castling = mBoard->getCastlingRights();
           output << " Castling: ";
-          if (castling & jchess::CASTLE_WHITE_KING)
+          if (castling & jcl::CASTLE_WHITE_KING)
             output << "K";
-          if (castling & jchess::CASTLE_WHITE_QUEEN)
+          if (castling & jcl::CASTLE_WHITE_QUEEN)
             output << "Q";
-          if (castling & jchess::CASTLE_BLACK_KING)
+          if (castling & jcl::CASTLE_BLACK_KING)
             output << "k";
-          if (castling & jchess::CASTLE_BLACK_QUEEN)
+          if (castling & jcl::CASTLE_BLACK_QUEEN)
             output << "q";
         }
       }
@@ -159,12 +164,25 @@ void ConsoleGame::handlePrint() const
   output << "   A   B   C   D   E   F   G   H  \n";
   output << "\n";
 
-  jchess::Fen fen;
+  jcl::Fen fen;
   fen.setFromBoard(mBoard);
   std::string fenString = fen.toString();
   output << "FEN: " << fenString << "\n";
 
   std::cout << output.str() << std::endl;
+}
+
+void ConsoleGame::handleShow() const
+{
+  jcl::Timer timer;
+  timer.start();
+
+  jcl::MoveList moveList;
+  mBoard->generateMoves(moveList);
+  std::cout << timer.elapsed() << std::endl;
+
+  for (uint8_t i = 0; i < moveList.size(); i++)
+    std::cout << moveList.moveAt(i)->toSmithNotation() << "\n";
 }
 
 // template <typename T>

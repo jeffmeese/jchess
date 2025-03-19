@@ -1,9 +1,9 @@
-#ifndef JCHESS_TYPES_H
-#define JCHESS_TYPES_H
+#ifndef JCL_TYPES_H
+#define JCL_TYPES_H
 
 #include <cstdint>
 
-namespace jchess
+namespace jcl
 {
 
 enum class Color : int32_t
@@ -48,4 +48,4 @@ enum class PieceType : int32_t
 
 }
 
-#endif // #ifndef JCHESS_TYPES_H
+#endif // #ifndef JCL_TYPES_H
