@@ -57,6 +57,9 @@ void Board8x8::generateCastlingMoves(MoveList & moveList) const
   Color sideToMove = this->getSideToMove();
   uint8_t castlingRights = this->getCastlingRights();
 
+  if (castlingRights == CASTLE_NONE)
+    return;
+
   if (sideToMove == Color::White)
   {
     bool b1Empty = mPieces[Square::B1] == Piece::None;
