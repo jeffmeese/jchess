@@ -446,6 +446,7 @@ void Board8x8::generatePawnMoves(uint8_t index, Color sideToMove, MoveList & mov
     }
   }
 
+  // Generate enPassant captures
   int8_t enPassantColumn = getEnpassantColumn();
   if (enPassantColumn != INVALID_ENPASSANT_COLUMN)
   {
@@ -1092,16 +1093,16 @@ void Board8x8::pushMove(uint8_t from, uint8_t to, Piece piece, Piece capturedPie
   uint8_t destRow = getRow(to);
   uint8_t destCol = getCol(to);
 
-  std::unique_ptr<Move> newMove(new Move(sourceRow, sourceColumn, destRow, destCol, piece));
-  newMove->setCapturedPiece(capturedPiece);
-  newMove->setPromotedPiece(promotedPiece);
-  newMove->setCastlingRights(this->getCastlingRights());
-  newMove->setEnpassantColumn(this->getEnpassantColumn());
-  newMove->setHalfMoveClock(this->getHalfMoveClock());
-  newMove->setFullMoveCounter(this->getFullMoveNumber());
-  newMove->setType(type);
+  Move newMove(sourceRow, sourceColumn, destRow, destCol, piece);
+  newMove.setCapturedPiece(capturedPiece);
+  newMove.setPromotedPiece(promotedPiece);
+  newMove.setCastlingRights(this->getCastlingRights());
+  newMove.setEnpassantColumn(this->getEnpassantColumn());
+  newMove.setHalfMoveClock(this->getHalfMoveClock());
+  newMove.setFullMoveCounter(this->getFullMoveNumber());
+  newMove.setType(type);
 
-  moveList.addMove(std::move(newMove));
+  moveList.addMove(newMove);
 }
 
 bool Board8x8::setPosition(const std::string & fenString)

@@ -18,19 +18,21 @@ public:
   uint32_t size() const;
 
 public:
-  void addMove(std::unique_ptr<Move> newMove);
+  //void addMove(std::unique_ptr<Move> newMove);
+  void addMove(const Move & move);
   void clear();
   Move * moveAt(uint8_t index);
   const Move * moveAt(uint8_t index) const;
   void print(std::ostream & output) const;
   void removeLast();
 
-//public:
-//  const Move * operator[](uint8_t index) const;
+public:
+  const Move * operator[](uint8_t index) const;
 
 private:
+  std::vector<Move> mMoves;
   //std::unique_ptr<Move> mMoves[256];
-  std::vector<std::unique_ptr<Move>> mMoves;
+  //std::vector<std::unique_ptr<Move>> mMoves;
   //uint8_t mTotalMoves;
 };
 

@@ -9,11 +9,12 @@ namespace jcl
 
 MoveList::MoveList()
 {
+  mMoves.reserve(256);
 }
 
-void MoveList::addMove(std::unique_ptr<Move> newMove)
+void MoveList::addMove(const Move & move)
 {
-  mMoves.push_back(std::move(newMove));
+  mMoves.push_back(move);
 }
 
 void MoveList::clear()
@@ -21,26 +22,20 @@ void MoveList::clear()
   mMoves.clear();
 }
 
-// inline const Move & MoveList::operator[](uint8_t index) const
-// {
-//   return mMoves[index];
-// }
+const Move * MoveList::operator[](uint8_t index) const
+{
+  return &mMoves[index];
+}
 
 Move * MoveList::moveAt(uint8_t index)
 {
-  return mMoves.at(index).get();
+  return &mMoves[index];
 }
 
 const Move * MoveList::moveAt(uint8_t index) const
 {
-  return mMoves.at(index).get();
+  return &mMoves[index];
 }
-
-// // Yes, there's no error checking so this could end badly
-// inline void MoveList::removeLast()
-// {
-//   --mTotalMoves;
-// }
 
 uint32_t MoveList::size() const
 {
@@ -51,7 +46,7 @@ void MoveList::print(std::ostream & output) const
 {
   for (uint8_t i = 0; i < size(); i++)
   {
-    output << mMoves[i]->toSmithNotation() << "\n";
+    output << mMoves[i].toSmithNotation() << "\n";
   }
 }
 

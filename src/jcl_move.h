@@ -11,6 +11,8 @@ namespace jcl
 
 class Move
 {
+  friend class MoveList;
+
 public:
   enum class Type
   {
@@ -60,6 +62,9 @@ public:
   void setSourceColumn(uint8_t col);
   void setSourceRow(uint8_t row);
   std::string toSmithNotation() const;
+
+protected:
+  //Move();
 
 private:
   uint8_t mCastlingRights;

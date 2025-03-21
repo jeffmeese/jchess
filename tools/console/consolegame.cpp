@@ -341,7 +341,7 @@ void ConsoleGame::handleTestMoveGen() const
       timer.stop();
 
       bool success = (totalNodes == numNodes);
-      std::cout << "Perft (" << depthLevel << "): " << totalNodes << " nodes, ";
+      std::cout << "Perft (" << static_cast<int>(depthLevel) << "): " << totalNodes << " nodes, ";
       std::cout << "Time: " << timer.elapsed()/1e6 << " s, [" << static_cast<int>(numNodes) << "], ";
       std::cout << (success ? "OK" : "FAIL") << "\n";
 
