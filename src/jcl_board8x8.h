@@ -29,6 +29,8 @@ public:
   // Methods
   bool generateMoves(MoveList & moveList) const override;
   bool generateMoves(uint8_t row, uint8_t col, MoveList & moveList) const override;
+  uint8_t getKingColumn(Color color) const override;
+  uint8_t getKingRow(Color color) const override;
   PieceType getPieceType(uint8_t row, uint8_t col) const override;
   bool isCellAttacked(uint8_t row, uint8_t col, Color attackColor) const override;
   bool makeMove(const Move * move) override;
@@ -41,9 +43,17 @@ protected:
 private:
 
   // Implementation
+  bool checkAttack(uint8_t index,
+                   int8_t rowIncrement,
+                   int8_t colIncrement,
+                   Color attackColor) const;
+
   void generateCastlingMoves(MoveList & moveList) const;
 
-  bool generateMoves(uint8_t row, uint8_t col, MoveList & moveList, bool generateCastling) const;
+  bool generateMoves(uint8_t row,
+                     uint8_t col,
+                     MoveList & moveList,
+                     bool generateCastling) const;
 
   bool generateMoves(uint8_t index,
                      MoveList & moveList) const;
@@ -56,6 +66,7 @@ private:
                            int8_t rowIncrement,
                            int8_t colIncrement,
                            bool slider,
+                           bool king,
                            MoveList & moveList) const;
   void initBoard();
   void initMoves();

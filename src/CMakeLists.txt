@@ -8,8 +8,10 @@ set(HDR_FILES
     jcl_fen.h
     jcl_move.h
     jcl_movelist.h
+    jcl_perft.h
     jcl_timer.h
     jcl_types.h
+    jcl_util.h
     #alphabetasearch.h
     #bitboard.h
     #board.h
@@ -39,7 +41,9 @@ set(SRC_FILES
     jcl_fen.cpp
     jcl_move.cpp
     jcl_movelist.cpp
+    jcl_perft.cpp
     jcl_timer.cpp
+    jcl_util.cpp
     #alphabetasearch.cpp
     #bitboard.cpp
     #board0x88.cpp

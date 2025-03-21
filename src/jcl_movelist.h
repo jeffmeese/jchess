@@ -15,7 +15,7 @@ public:
   MoveList();
 
 public:
-  uint8_t size() const;
+  uint32_t size() const;
 
 public:
   void addMove(std::unique_ptr<Move> newMove);

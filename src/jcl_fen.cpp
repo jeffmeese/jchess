@@ -5,6 +5,8 @@
 #include <sstream>
 #include <vector>
 
+#include "jcl_util.h"
+
 namespace jcl
 {
 
@@ -113,7 +115,8 @@ bool Fen::setFromString(const std::string &fenString)
 {
   init();
 
-  std::vector<std::string> tokens = splitString(fenString);
+  std::string s(fenString);
+  std::vector<std::string> tokens = splitString(trim(s));
   if (tokens.size() != 6)
   {
     std::cerr << "Invalid FEN string: " << fenString << std::endl;

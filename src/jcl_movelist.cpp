@@ -42,7 +42,7 @@ const Move * MoveList::moveAt(uint8_t index) const
 //   --mTotalMoves;
 // }
 
-uint8_t MoveList::size() const
+uint32_t MoveList::size() const
 {
   return mMoves.size();
 }

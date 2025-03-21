@@ -28,6 +28,8 @@ public:
 
   virtual bool generateMoves(MoveList & moveList) const = 0;
   virtual bool generateMoves(uint8_t row, uint8_t col, MoveList & moveList) const = 0;
+  virtual uint8_t getKingColumn(Color color) const = 0;
+  virtual uint8_t getKingRow(Color color) const = 0;
   virtual PieceType getPieceType(uint8_t row, uint8_t col) const = 0;
   virtual bool isCellAttacked(uint8_t row, uint8_t col, Color attackColor) const = 0;
   virtual bool makeMove(const Move * move) = 0;

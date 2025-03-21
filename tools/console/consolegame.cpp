@@ -7,26 +7,49 @@
 
 #include "jcl_board.h"
 #include "jcl_consts.h"
-//#include "engine.h"
-//#include "evaluation.h"
 #include "jcl_fen.h"
-//#include "JCL_move.h"
-#//include "JCL_movelist.h"
-//#include "perft.h"
-//#include "search.h"
-//#include "timer.h"
+#include "jcl_perft.h"
 #include "jcl_timer.h"
 #include "jcl_types.h"
-//#include "util.h"
+#include "jcl_util.h"
+
+template <typename T>
+T readValue(std::istream & iss)
+{
+  T value = T();
+  iss >> value;
+  return value;
+}
 
 ConsoleGame::ConsoleGame(jcl::Board * board)
     : mBoard(board)
 {
 }
 
+void ConsoleGame::doMove(const jcl::Move * move)
+{
+  //if (isOver())
+  //  return;
+  mBoard->makeMove(move);
+  //checkForMate();
+//  mCompletedMoves->addMove(move);
+}
+
+void ConsoleGame::doPerft(int32_t perftLevel) const
+{
+  jcl::Perft perft(mBoard);
+
+  jcl::Timer timer;
+  timer.start();
+  uint64_t totalNodes = perft.execute(perftLevel);
+  timer.stop();
+  std::cout << "Total Nodes: " << totalNodes << " Time: " << timer.elapsed()/1e3 << " milliseconds\n";
+}
+
 void ConsoleGame::run()
 {
-  while (true) {
+  while (true)
+  {
     std::cout << "\njc: ";
 
     std::string inputString;
@@ -54,7 +77,6 @@ void ConsoleGame::run()
     {
       handleShow();
     }
-
     // else if (commandString == "divide")
     //   handleDivide(iss);
     // else if (commandString == "help")
@@ -65,14 +87,20 @@ void ConsoleGame::run()
     //   handlePrint();
     // else if (commandString == "fen")
     //   handleFen();
-    // else if (commandString == "perft")
-    //   handlePerft(iss);
-    // else if (commandString == "move")
-    //   handleMove(iss);
-    // else if (commandString == "setboard")
-    //   handleSetBoard(iss);
-    // else if (commandString == "testmovegen")
-    //   handleTestMoveGen();
+    else if (commandString == "perft")
+    {
+      handlePerft(iss);
+    }
+    else if (commandString == "move")
+    {
+      handleMove(iss);
+    }
+    else if (commandString == "setboard")
+    {
+       handleSetBoard(iss);
+    }
+    else if (commandString == "testmovegen")
+      handleTestMoveGen();
     // else if (commandString == "eval")
     //   handleEval();
     // else if (commandString == "engine")
@@ -94,6 +122,23 @@ void ConsoleGame::run()
   }
 }
 
+int32_t ConsoleGame::getMoveIndex(uint8_t srcRow, uint8_t srcCol, uint8_t dstRow, uint8_t dstCol, const jcl::MoveList & moveList) const
+{
+  int32_t moveIndex = -1;
+  for (uint8_t i = 0; i < moveList.size(); i++) {
+    const jcl::Move * move = moveList.moveAt(i);
+    uint8_t sourceRow = move->getSourceRow();
+    uint8_t sourceCol = move->getSourceColumn();
+    uint8_t destRow = move->getDestinationRow();
+    uint8_t destCol = move->getDestinationColumn();
+    if (srcRow == sourceRow && dstRow == destRow && srcCol == sourceCol && dstCol == destCol) {
+      moveIndex = static_cast<int>(i);
+      return moveIndex;
+    }
+  }
+  return moveIndex;
+}
+
 void ConsoleGame::handleHelp() const
 {
   std::cout << "quit.................Quits the program\n";
@@ -109,6 +154,60 @@ void ConsoleGame::handleHelp() const
   //std::cout << "setboard <fen>.......Sets the board position to <fen>\n";
   //std::cout << "testmovegen..........Tests the move generator\n";
   //std::cout << "undo.................Undoes the last move\n";
+}
+
+void ConsoleGame::handleMove(std::istringstream & iss)
+{
+  //if (isOver()) {
+  //  std::cout << "The game is over. Type new to start a new game\n";
+  //  return;
+  //}
+
+  // Get the move string
+  std::string moveString;
+  iss >> moveString;
+  if (moveString.empty()) {
+    std::cout << "A move string must be provided\n";
+    return;
+  }
+
+  // Parse the move
+  uint8_t srcRow, srcCol, dstRow, dstCol;
+  if (!parseMovePos(moveString, srcRow, srcCol, dstRow, dstCol))
+    return;
+
+  // Generate the candidate moves from the board
+  jcl::MoveList moveList;
+  mBoard->generateMoves(moveList);
+
+  // Check that the move is valid
+  int moveIndex = getMoveIndex(srcRow, srcCol, dstRow, dstCol, moveList);
+  if (moveIndex == -1) {
+    std::cout << "Sorry " << moveString << " is not a valid move\n";
+    std::cout << "Type divide 1 to sell all available moves\n";
+    return;
+  }
+
+  doMove(moveList.moveAt(moveIndex));
+  //if (isOver()) {
+  //  showEndGame();
+  //  return;
+  //}
+
+//  executeEngineMove();
+//  handlePrint();
+//  if (isOver()) {
+//    showEndGame();
+//  }
+}
+
+void ConsoleGame::handlePerft(std::istringstream & iss) const
+{
+  int32_t perftLevel = readLevel(iss);
+  if (perftLevel == 0)
+    return;
+
+  doPerft(perftLevel);
 }
 
 void ConsoleGame::handlePrint() const
@@ -172,6 +271,86 @@ void ConsoleGame::handlePrint() const
   std::cout << output.str() << std::endl;
 }
 
+void ConsoleGame::handleSetBoard(std::istringstream & iss)
+{
+  std::string fenString;
+  std::getline(iss, fenString);
+  if (fenString.empty()) {
+    std::cout << "A fen string must be provided\n";
+    return;
+  }
+
+  mBoard->setPosition(fenString);
+}
+
+void ConsoleGame::handleTestMoveGen() const
+{
+  std::string fileName("perftsuite.epd");
+  std::ifstream inputStream(fileName.c_str());
+  if (inputStream.fail())
+  {
+    std::cout << "Could not locate perft test file " << fileName << "\n";
+    return;
+  }
+
+  while (true)
+  {
+    std::string inputLine;
+    std::getline(inputStream, inputLine);
+    if (inputStream.fail())
+    {
+      break;
+    }
+
+    std::vector<std::string> tokens;
+    jcl::split(tokens, inputLine, ';');
+    if (tokens.size() < 1)
+    {
+      continue;
+    }
+
+    std::string fenString = tokens.at(0);
+    if (tokens.size() > 1)
+    {
+      std::cout << "fen: " << fenString << "\n";
+      mBoard->setPosition(fenString);
+    }
+
+    for (uint8_t i = 1; i < tokens.size(); i++)
+    {
+      std::string perftDepthString = tokens.at(i);
+
+      std::vector<std::string> perftTokens;
+      jcl::split(perftTokens, perftDepthString, ' ');
+      if (perftTokens.size() < 2)
+      {
+        continue;
+      }
+
+      std::string depthString = perftTokens.at(0);
+      std::string nodesString = perftTokens.at(1);
+
+      uint8_t depthLevel = atoi(depthString.substr(1).c_str());
+      uint64_t numNodes = atoi(nodesString.c_str());
+
+      jcl::Timer timer;
+      jcl::Perft perft(mBoard);
+
+      timer.start();
+      uint64_t totalNodes = perft.execute(depthLevel);
+      timer.stop();
+
+      bool success = (totalNodes == numNodes);
+      std::cout << "Perft (" << depthLevel << "): " << totalNodes << " nodes, ";
+      std::cout << "Time: " << timer.elapsed()/1e6 << " s, [" << static_cast<int>(numNodes) << "], ";
+      std::cout << (success ? "OK" : "FAIL") << "\n";
+
+      //if (!success)
+      //  return;
+    }
+  }
+}
+
 void ConsoleGame::handleShow() const
 {
   jcl::Timer timer;
@@ -182,16 +361,82 @@ void ConsoleGame::handleShow() const
   std::cout << timer.elapsed() << std::endl;
 
   for (uint8_t i = 0; i < moveList.size(); i++)
-    std::cout << moveList.moveAt(i)->toSmithNotation() << "\n";
+  {
+    const jcl::Move * move = moveList.moveAt(i);
+    bool validMove = false;
+    //uint8_t r = mBoard->getKingRow(mBoard->getSideToMove());
+    //uint8_t c = mBoard->getKingColumn(mBoard->getSideToMove());
+    mBoard->makeMove(move);
+    uint8_t kingRow = mBoard->getKingRow(!mBoard->getSideToMove());
+    uint8_t kingCol = mBoard->getKingColumn(!mBoard->getSideToMove());
+
+    bool attacked = mBoard->isCellAttacked(kingRow, kingCol, mBoard->getSideToMove());
+    if (!attacked)
+    {
+      validMove = true;
+    }
+    mBoard->unmakeMove(move);
+    //r = mBoard->getKingRow(mBoard->getSideToMove());
+    //c = mBoard->getKingColumn(mBoard->getSideToMove());
+
+    if (validMove)
+    {
+      std::cout << moveList.moveAt(i)->toSmithNotation() << "\n";
+    }
+  }
 }
 
-// template <typename T>
-// T readValue(std::istream & iss)
-// {
-//   T value = T();
-//   iss >> value;
-//   return value;
-// }
+bool ConsoleGame::parseMovePos(const std::string &moveString, uint8_t & srcRow, uint8_t & srcCol, uint8_t & dstRow, uint8_t & dstCol) const
+{
+  static std::map<char, uint8_t> columnMap;
+  static std::map<char, uint8_t> rowMap;
+
+  if (columnMap.size() == 0) {
+    columnMap['a'] = 0;
+    columnMap['b'] = 1;
+    columnMap['c'] = 2;
+    columnMap['d'] = 3;
+    columnMap['e'] = 4;
+    columnMap['f'] = 5;
+    columnMap['g'] = 6;
+    columnMap['h'] = 7;
+
+    rowMap['1'] = 0;
+    rowMap['2'] = 1;
+    rowMap['3'] = 2;
+    rowMap['4'] = 3;
+    rowMap['5'] = 4;
+    rowMap['6'] = 5;
+    rowMap['7'] = 6;
+    rowMap['8'] = 7;
+
+  }
+
+  // Check format of move string
+  if (moveString.find_first_not_of("123456789abcdefghpnbrqkEcCNBRQ") != std::string::npos || moveString.length() < 4) {
+    std::cout << "Invalid move string " << moveString << "\n";
+    return false;
+  }
+
+  srcCol = columnMap[moveString.at(0)];
+  srcRow = rowMap[moveString.at(1)];
+  dstCol = columnMap[moveString.at(2)];
+  dstRow = rowMap[moveString.at(3)];
+
+  return true;
+}
+
+int32_t ConsoleGame::readLevel(std::istream & iss) const
+{
+  int32_t perftLevel = readValue<int32_t>(iss);
+  if (iss.fail()) {
+    std::cout << "Invalid perft level\n";
+    return 0;
+  }
+  return perftLevel;
+}
+
+
 
 // ConsoleGame::ConsoleGame(Board * board, Engine * engine)
 //   : mBoard(board)
@@ -199,16 +444,7 @@ void ConsoleGame::handleShow() const
 // {
 // }
 
-// void ConsoleGame::doPerft(int perftLevel) const
-// {
-//   Perft perft(mBoard);
 
-//   Timer timer;
-//   timer.start();
-//   ulonglong totalNodes = perft.execute(perftLevel);
-//   timer.stop();
-//   std::cout << "Total Nodes: " << totalNodes << " Time: " << timer.elapsed()/1e3 << " milliseconds\n";
-// }
 
 // void ConsoleGame::executeEngineMove()
 // {
@@ -216,22 +452,7 @@ void ConsoleGame::handleShow() const
 //   doMove(move);
 // }
 
-// int ConsoleGame::getMoveIndex(uchar srcRow, uchar srcCol, uchar dstRow, uchar dstCol, const MoveList & moveList) const
-// {
-//   int moveIndex = -1;
-//   for (uchar i = 0; i < moveList.size(); i++) {
-//     Move move = moveList[i];
-//     uchar sourceRow = move.sourceRow();
-//     uchar sourceCol = move.sourceCol();
-//     uchar destRow = move.destRow();
-//     uchar destCol = move.destCol();
-//     if (srcRow == sourceRow && dstRow == destRow && srcCol == sourceCol && dstCol == destCol) {
-//       moveIndex = static_cast<int>(i);
-//       return moveIndex;
-//     }
-//   }
-//   return moveIndex;
-// }
+
 
 // void ConsoleGame::handleDivide(std::istringstream & iss) const
 // {
@@ -292,64 +513,14 @@ void ConsoleGame::handleShow() const
 //   std::cout << "undo.................Undoes the last move\n";
 // }
 
-// void ConsoleGame::handleMove(std::istringstream & iss)
-// {
-//   if (isOver()) {
-//     std::cout << "The game is over. Type new to start a new game\n";
-//     return;
-//   }
 
-//   // Get the move string
-//   std::string moveString;
-//   iss >> moveString;
-//   if (moveString.empty()) {
-//     std::cout << "A move string must be provided\n";
-//     return;
-//   }
-
-//   // Parse the move
-//   uchar srcRow, srcCol, dstRow, dstCol;
-//   if (!parseMovePos(moveString, srcRow, srcCol, dstRow, dstCol))
-//     return;
-
-//   // Generate the candidate moves from the board
-//   MoveList moveList;
-//   mBoard->generateMoves(moveList);
-
-//   // Check that the move is valid
-//   int moveIndex = getMoveIndex(srcRow, srcCol, dstRow, dstCol, moveList);
-//   if (moveIndex == -1) {
-//     std::cout << "Sorry " << moveString << " is not a valid move\n";
-//     std::cout << "Type divide 1 to sell all available moves\n";
-//     return;
-//   }
-
-//   doMove(moveList[moveIndex]);
-//   if (isOver()) {
-//     showEndGame();
-//     return;
-//   }
-
-// //  executeEngineMove();
-// //  handlePrint();
-// //  if (isOver()) {
-// //    showEndGame();
-// //  }
-// }
 
 // void ConsoleGame::handleNewGame()
 // {
 //   restart();
 // }
 
-// void ConsoleGame::handlePerft(std::istringstream & iss) const
-// {
-//   uint perftLevel = readLevel(iss);
-//   if (perftLevel == 0)
-//     return;
 
-//   doPerft(perftLevel);
-// }
 
 // void ConsoleGame::handlePrint() const
 // {
@@ -358,17 +529,7 @@ void ConsoleGame::handleShow() const
 //   std::cout << oss.str() << "\n";
 // }
 
-// void ConsoleGame::handleSetBoard(std::istringstream & iss)
-// {
-//   std::string fenString;
-//   std::getline(iss, fenString);
-//   if (fenString.empty()) {
-//     std::cout << "A fen string must be provided\n";
-//     return;
-//   }
 
-//   setPosition(fenString);
-// }
 
 // void ConsoleGame::handleShow() const
 // {
@@ -383,63 +544,7 @@ void ConsoleGame::handleShow() const
 //   //setGameType(HumanVsComputer);
 // }
 
-// void ConsoleGame::handleTestMoveGen() const
-// {
-//   std::string fileName("perftsuite.epd");
-//   std::ifstream inputStream(fileName.c_str());
-//   if (inputStream.fail()) {
-//     std::cout << "Could not locate perft test file " << fileName << "\n";
-//     return;
-//   }
 
-//   while (true) {
-//     std::string inputLine;
-//     std::getline(inputStream, inputLine);
-//     if (inputStream.fail())
-//       break;
-
-//     std::vector<std::string> tokens;
-//     util::split(tokens, inputLine, ';');
-//     if (tokens.size() < 1)
-//       continue;
-
-//     std::string fenString = tokens.at(0);
-//     if (tokens.size() > 1) {
-//       std::cout << "fen: " << fenString << "\n";
-//       mBoard->setPosition(fenString);
-//     }
-
-//     for (uint i = 1; i < tokens.size(); i++) {
-//       std::string perftDepthString = tokens.at(i);
-
-//       std::vector<std::string> perftTokens;
-//       util::split(perftTokens, perftDepthString, ' ');
-//       if (perftTokens.size() < 2)
-//         continue;
-
-//       std::string depthString = perftTokens.at(0);
-//       std::string nodesString = perftTokens.at(1);
-
-//       uint depthLevel = atoi(depthString.substr(1).c_str());
-//       uint numNodes = atoi(nodesString.c_str());
-
-//       Timer timer;
-//       Perft perft(mBoard);
-
-//       timer.start();
-//       ulonglong totalNodes = perft.execute(depthLevel);
-//       timer.stop();
-
-//       bool success = (totalNodes == numNodes);
-//       std::cout << "Perft (" << depthLevel << "): " << totalNodes << " nodes, ";
-//       std::cout << "Time: " << timer.elapsed()/1e6 << " s, [" << numNodes << "], ";
-//       std::cout << (success ? "OK" : "FAIL") << "\n";
-
-//       //if (!success)
-//       //  return;
-//     }
-//   }
-// }
 
 // void ConsoleGame::handleTwoPlayer()
 // {
@@ -451,55 +556,9 @@ void ConsoleGame::handleShow() const
 //   undoLastMove();
 // }
 
-// bool ConsoleGame::parseMovePos(const std::string &moveString, uchar & srcRow, uchar & srcCol, uchar & dstRow, uchar & dstCol) const
-// {
-//   static std::map<char, uchar> columnMap;
-//   static std::map<char, uchar> rowMap;
 
-//   if (columnMap.size() == 0) {
-//     columnMap['a'] = 0;
-//     columnMap['b'] = 1;
-//     columnMap['c'] = 2;
-//     columnMap['d'] = 3;
-//     columnMap['e'] = 4;
-//     columnMap['f'] = 5;
-//     columnMap['g'] = 6;
-//     columnMap['h'] = 7;
 
-//     rowMap['1'] = 0;
-//     rowMap['2'] = 1;
-//     rowMap['3'] = 2;
-//     rowMap['4'] = 3;
-//     rowMap['5'] = 4;
-//     rowMap['6'] = 5;
-//     rowMap['7'] = 6;
-//     rowMap['8'] = 7;
 
-//   }
-
-//   // Check format of move string
-//   if (moveString.find_first_not_of("123456789abcdefghpnbrqkEcCNBRQ") != std::string::npos || moveString.length() < 4) {
-//     std::cout << "Invalid move string " << moveString << "\n";
-//     return false;
-//   }
-
-//   srcCol = columnMap[moveString.at(0)];
-//   srcRow = rowMap[moveString.at(1)];
-//   dstCol = columnMap[moveString.at(2)];
-//   dstRow = rowMap[moveString.at(3)];
-
-//   return true;
-// }
-
-// uint ConsoleGame::readLevel(std::istream & iss) const
-// {
-//   uint perftLevel = readValue<uint>(iss);
-//   if (iss.fail()) {
-//     std::cout << "Invalid perft level\n";
-//     return 0;
-//   }
-//   return perftLevel;
-// }
 
 // void ConsoleGame::run()
 // {

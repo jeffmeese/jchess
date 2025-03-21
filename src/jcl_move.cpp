@@ -11,7 +11,8 @@ Move::Move(uint8_t sourceRow, uint8_t sourceCol, uint8_t destRow, uint8_t destCo
   mSourceColumn = sourceCol;
   mDestinationRow = destRow;
   mDestinationColumn = destCol;
-  mPiece = mCapturedPiece = mPromotedPiece = Piece::None;
+  mPiece = piece;
+  mCapturedPiece = mPromotedPiece = Piece::None;
   mType = Type::Quiet;
   mEnPassantColumn = 8;
   mCastlingRights = CASTLE_NONE;
