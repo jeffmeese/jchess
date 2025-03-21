@@ -5,6 +5,7 @@ set(HDR_FILES
     jcl_board.h
     jcl_board8x8.h
     jcl_consts.h
+    jcl_evaluation.h
     jcl_fen.h
     jcl_move.h
     jcl_movelist.h
@@ -38,6 +39,7 @@ set(HDR_FILES
 set(SRC_FILES
     jcl_board.cpp
     jcl_board8x8.cpp
+    jcl_evaluation.cpp
     jcl_fen.cpp
     jcl_move.cpp
     jcl_movelist.cpp
