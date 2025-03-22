@@ -1,7 +1,6 @@
 #ifndef JCL_MOVE_H
 #define JCL_MOVE_H
 
-#include "jcl_consts.h"
 #include "jcl_types.h"
 
 #include <string>

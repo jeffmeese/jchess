@@ -5,6 +5,7 @@
 #include <sstream>
 #include <vector>
 
+#include "jcl_consts.h"
 #include "jcl_util.h"
 
 namespace jcl

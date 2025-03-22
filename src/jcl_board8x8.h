@@ -5,36 +5,62 @@
 
 #include "jcl_board.h"
 #include "jcl_move.h"
+#include "jcl_movelist.h"
 
 namespace jcl
 {
 
-class MoveList;
-
-//! \class Board8x8
-//! Represents a standard 8x8 board representation
-//!
-//! This is the easiest type of board representation to visualize
-//! as it matches reality, however, it suffers from a perfomance
-//! penalty due to the many tests required to determine when piece
-//! moves or attacks off the board
+/*! \brief Represents a standard 8x8 board representation
+ *
+ * The Board8x8 class represents the chess board in a standard
+ * 8x8 set of squares. This is easiest of the board representations
+ * from an intuitive standpoint though it suffers from poor performance
+ * due to the numerous checks for moves and attacks that happen off
+ * the board. While some optimizations were made for performance
+ * most of the code is pretty straightforward and can be a good reference
+ * to understand the type of logic involved in a board representation.
+ *
+ * The performance for this board could be increased by pre-computing
+ * possible moves for each square on the board for each attacking
+ * direction. This would eliminate a lot of the checks for pieces
+ * moving or attacking off the board. Even with that, however,
+ * this class will never be able to match the performance of
+ * more complex board representations such as bit boards.
+ */
 class Board8x8
     : public Board
 {
 public:
 
-  // Construction
+  /*!
+   * \brief Constructor
+   *
+   * Constructs a default Board8x8 instance.
+   */
   Board8x8();
 
   // Methods
   bool generateMoves(MoveList & moveList) const override;
-  bool generateMoves(uint8_t row, uint8_t col, MoveList & moveList) const override;
+
+  bool generateMoves(uint8_t row,
+                     uint8_t col,
+                     MoveList & moveList) const override;
+
   uint8_t getKingColumn(Color color) const override;
+
   uint8_t getKingRow(Color color) const override;
-  PieceType getPieceType(uint8_t row, uint8_t col) const override;
-  bool isCellAttacked(uint8_t row, uint8_t col, Color attackColor) const override;
+
+  PieceType getPieceType(uint8_t row,
+                         uint8_t col) const override;
+
+  bool isCellAttacked(uint8_t row,
+                      uint8_t col,
+                      Color attackColor) const override;
+
   bool makeMove(const Move * move) override;
+
   bool setPosition(const std::string & fenString) override;
+
   bool unmakeMove(const Move * move) override;
 
 protected:
@@ -42,35 +68,161 @@ protected:
 
 private:
 
-  // Implementation
-  bool checkAttack(uint8_t index,
-                   int8_t rowIncrement,
-                   int8_t colIncrement,
-                   Color attackColor) const;
-
+  /*!
+   * \brief Generates the castling moves
+   *
+   * This function generates the possible castling moves
+   * based on the current board position. Castling moves
+   * are only dependent of the current state of the board
+   * and the castling rights available so they only need
+   * to be generated once when all moves are being generated.
+   *
+   * \param moveList The move list to hold the moves
+   */
   void generateCastlingMoves(MoveList & moveList) const;
 
+  /*!
+   * \brief Generates a move list
+   *
+   * This function generates the moves for the piece at the
+   * specified row and column and adds them to the move list.
+   * Moves are generated is a pseudo-legal fashion. Checks are
+   * not made to determine if a paticular move will place the
+   * king of the same color is in check. The \ref isCellAttacked
+   * function can be used to determine which moves are
+   * actually legal.
+   *
+   * The generateCastling parameter determines whether castling
+   * moves will be generated. Since castling moves are not index
+   * dependent they could be precomputed before this function is
+   * called so this parameter allows castling move generation
+   * to be skipped. When all moves for all pieces are being generated
+   * this function gets called in a loop so castling moves are
+   * skipped in that instance.
+   *
+   * \param row The row of the piece
+   * \param col The column of the piece
+   * \param moveList The move list to update
+   * \param generateCastling Set to true to include castling moves
+   *
+   * \return true if the function is successful, false otherwise
+   */
   bool generateMoves(uint8_t row,
                      uint8_t col,
                      MoveList & moveList,
                      bool generateCastling) const;
 
+  /*!
+   * \brief Generates a move list
+   *
+   * This function generates the moves for the piece at the
+   * specified index and adds them to the move list.
+   * Moves are generated is a pseudo-legal fashion. Checks are
+   * not made to determine if a paticular move will place the
+   * king of the same color is in check. The \ref isCellAttacked
+   * function can be used to determine which moves are
+   * actually legal.
+   *
+   * \param index The index of the piece
+   * \param moveList The move list to update
+   *
+   * \return true if the function is successful, false otherwise
+   */
   bool generateMoves(uint8_t index,
                      MoveList & moveList) const;
 
+  /*!
+   * \brief Generates the pawn moves for an index
+   *
+   * This function generates all moves for a pawn
+   * located at a specified index. Pawns are the only
+   * piece that cannot move backwards so its move
+   * generation is handled specially. Pawns also have
+   * different capture and non-capture move techniques.
+   *
+   * \param index The index of the pawn
+   * \param sideToMove The color of the pawn
+   * \param moveList The move list to hold the moves
+   */
   void generatePawnMoves(uint8_t index,
                          Color sideToMove,
                          MoveList & moveList) const;
 
+  /*!
+   * \brief Generates non-pawn moves
+   *
+   * This function generates all moves for a piece at the
+   * specified index. This function is called for all
+   * pieces with the exception of pawns.
+   *
+   * The rowIncrement and colIncrement parametes specify
+   * in which direction the piece will be moving.
+   *
+   * The slider parameter determines whether this piece is a
+   * sliding piece (e.g. bishop, queen, rook). Sliding pieces
+   * can continue moving along the board until they encounter
+   * another piece or move off the board. Non-sliding pieces
+   * (kings, knights) can only move once.
+   *
+   * \param index The index of the piece
+   * \param rowIncrement The displacement in row for each move
+   * \param colIncrement The displacement in column for each move
+   * \param slider true if the piece is a sliding piece
+   * \param moveList The list to hold the moves
+   */
   void generateSliderMoves(uint8_t index,
                            int8_t rowIncrement,
                            int8_t colIncrement,
                            bool slider,
-                           bool king,
                            MoveList & moveList) const;
+
+  /*! \brief Initializes the board to it's initial state
+   *
+   *  This function initializes the board to the initial state
+   *  at the start of a game. It also initializes all
+   *  other data stored by the object.
+   */
   void initBoard();
-  void initMoves();
+
+  /*!
+   * \brief Determines if a cell is attacked
+   *
+   * This function determines if the cell at the specified
+   * index is attacked by a piece of the specified color.
+   * This is primarily used by engines to determine if particular
+   * move is valid. Any moves that put the king in check are
+   * considered invalid moves.
+   *
+   * \param index The index of the square to check for attacks
+   * \param attackColor The color of the pieces that are attacking.
+   *
+   * \return true if the cell at the index is attacked, false otherwise
+   */
   bool isCellAttacked(uint8_t index, Color attackColor) const;
+
+  /*!
+   * \brief Pushes a move on to the move list
+   *
+   * This function pushes a move on to the move list and stores
+   * information in the move that determine how to undo the move.
+   *
+   * The from and to parameters determine the starting and ending
+   * point for the move. The piece parameter specifies the type of
+   * piece that is moving. The capturedPiece argument specifies the
+   * piece that is captured by the move if any. The promotedPiece
+   * argument specifies the piece a pawn is promoted to when the
+   * move is a promotion. The type parameter specifies the type
+   * of move that is being perform. See the \ref Move class for a
+   * description of the types of moves available.
+   *
+   * \param from The starting index of the move
+   * \param to The ending index of the move
+   * \param piece The piece that is moving.
+   * \param capturedPiece The piece captured by the move, if any
+   * \param promotedPiece The promoted piece type for promotion moves
+   * \param type The move type
+   * \param moveList The move list to hold the move
+   */
   void pushMove(uint8_t from,
                 uint8_t to,
                 Piece piece,
@@ -84,59 +236,6 @@ private:
   Color mColors[64];
   std::map<Color, uint8_t> mKingColumn;
   std::map<Color, uint8_t> mKingRow;
-  uint8_t mWhitePawnMoves[64][4];
-  uint8_t mBlackPawnMoves[64][4];
-  uint8_t mBishopMoves[64][4];
-  uint8_t mQueenMoves[64][8];
-  uint8_t mRookMoves[64][4];
-
-  // Methods
-//public:
-  // void generateMoves(MoveList & moveList) const;
-  // bool isCellAttacked(uchar row, uchar col, Color attackingColor) const;
-  // void makeMove(const Move & move);
-  // PieceType pieceType(uchar row, uchar col) const;
-  // void setPosition(const std::string & fenString);
-  // void unmakeMove(const Move & move);
-
-  // Implementation
-//private:
-  // bool checkNonSliderAttack(uchar index, const uchar attackVector[][8], Color attackingColor, Piece piece) const;
-  // bool checkPawnAttack(uchar index, const uchar attackVector[][2], Color attackingColor) const;
-  // bool checkSliderAttack(char row, char col, char rowIncr, char colIncr, Color attackingColor, Piece piece1, Piece piece2) const;
-  // void generateCastlingMoves(MoveList & moveList) const;
-  // void generateNonSliderMoves(uchar index, Piece piece, const uchar attackVector[][8], MoveList & moveList) const;
-  // void generatePawnCaptures(uchar index, const uchar attackVector[][2], MoveList & moveList) const;
-  // void generatePawnMoves(uchar index, MoveList & moveList) const;
-  // void generateSliderMoves(uchar index, Piece piece, const uchar attackVector[][8], MoveList & moveList) const;
-  // void init();
-  // void initAttacks();
-  // bool isCellAttacked(uchar index, Color attackingColor) const;
-  // void pushMove(uchar from, uchar to, Piece piece, Piece capture, Piece promote, Move::Type type, MoveList & moveList) const;
-
-  // Members
-  // The attack vectors below are precomputed in initAttacks
-  // and contain the possible destination squares for each type
-  // of attack for each square on the board
-  // Each sliding piece can attack a maximum of 8 squares in each possible direction (N, S, ...)
-  // Kings and knights also have eight possible attacks
-  // Pawns can only attack two squares (enPassant captures are handled differently)
-  // Attacks that would occur off the board will contain the INVALID_SQUARE constant
-//private:
-  // Piece mPieces[64];
-  // Color mColors[64];
-  // uchar mKnightAttacks[64][8];
-  // uchar mKingAttacks[64][8];
-  // uchar mSliderAttacksNorthEast[64][8];
-  // uchar mSliderAttacksNorthWest[64][8];
-  // uchar mSliderAttacksSouthEast[64][8];
-  // uchar mSliderAttacksSouthWest[64][8];
-  // uchar mSliderAttacksNorth[64][8];
-  // uchar mSliderAttacksSouth[64][8];
-  // uchar mSliderAttacksEast[64][8];
-  // uchar mSliderAttacksWest[64][8];
-  // uchar mWhitePawnAttacks[64][2];
-  // uchar mBlackPawnAttacks[64][2];
 };
 
 }

@@ -2,6 +2,8 @@
 
 #include <sstream>
 
+#include "jcl_consts.h"
+
 namespace jcl
 {
 
