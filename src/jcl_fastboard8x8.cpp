@@ -522,29 +522,35 @@ void FastBoard8x8::initBoard()
   {
     mPieces[i] = Piece::None;
     mColors[i] = Color::None;
-
-    if (i < 16)
-    {
-      mColors[i] = Color::White;
-    }
-
-    if (i > 47)
-    {
-      mColors[i] = Color::Black;
-    }
   }
 
-  for (uint8_t i = 0; i < 8; i++)
+  for (uint8_t i = A1; i <= H1; i++)
   {
-    mPieces[i+8] = Piece::Pawn;
-    mPieces[i+48] = Piece::Pawn;
+    mPieces[i] = Piece::Pawn;
+    mColors[i] = Color::White;
   }
 
-  mPieces[0] = mPieces[7] = mPieces[56] = mPieces[63] = Piece::Rook;
-  mPieces[1] = mPieces[6] = mPieces[57] = mPieces[62] = Piece::Knight;
-  mPieces[2] = mPieces[5] = mPieces[58] = mPieces[61] = Piece::Bishop;
-  mPieces[3] = mPieces[59] = Piece::Queen;
-  mPieces[4] = mPieces[60] = Piece::King;
+  for (uint8_t i = A7; i <= H7; i++)
+  {
+    mPieces[i] = Piece::Pawn;
+    mColors[i] = Color::Black;
+  }
+
+  for (uint8_t i = A1; i <= H1; i++)
+  {
+    mColors[i] = Color::White;
+  }
+
+  for (uint8_t i = A8; i <= H8; i++)
+  {
+    mColors[i] = Color::Black;
+  }
+
+  mPieces[A1] = mPieces[H1] = mPieces[A8] = mPieces[H8] = Piece::Rook;
+  mPieces[B1] = mPieces[G1] = mPieces[B8] = mPieces[G8] = Piece::Knight;
+  mPieces[C1] = mPieces[F1] = mPieces[C8] = mPieces[F8] = Piece::Bishop;
+  mPieces[D1] = mPieces[D8] = Piece::Queen;
+  mPieces[E1] = mPieces[E8] = Piece::King;
 
   mKingColumn[Color::White] = 4;
   mKingRow[Color::White] = 0;

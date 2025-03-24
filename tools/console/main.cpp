@@ -4,6 +4,7 @@
 //#include <stdexcept>
 #include <memory>
 
+#include "jcl_bitboard.h"
 #include "jcl_board8x8.h"
 #include "jcl_fastboard8x8.h"
 #include "jcl_evaluation.h"
@@ -12,7 +13,8 @@
 int main(int argc, char ** argv)
 {
   //std::unique_ptr<jcl::Board8x8> board(new jcl::Board8x8);
-  std::unique_ptr<jcl::FastBoard8x8> board(new jcl::FastBoard8x8);
+  //std::unique_ptr<jcl::FastBoard8x8> board(new jcl::FastBoard8x8);
+  std::unique_ptr<jcl::BitBoard> board(new jcl::BitBoard);
   std::unique_ptr<jcl::Evaluation> evaluation(new jcl::Evaluation);
   std::unique_ptr<ConsoleGame> game(new ConsoleGame(board.get(), evaluation.get()));
   game->run();

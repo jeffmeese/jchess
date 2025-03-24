@@ -206,6 +206,10 @@ void ConsoleGame::handleMove(std::istringstream & iss)
   if (!parseMovePos(moveString, srcRow, srcCol, dstRow, dstCol))
     return;
 
+  jcl::Move move(srcRow, srcCol, dstRow, dstCol, jcl::Piece::Pawn);
+  doMove(&move);
+  return;
+
   // Generate the candidate moves from the board
   jcl::MoveList moveList;
   mBoard->generateMoves(moveList);
