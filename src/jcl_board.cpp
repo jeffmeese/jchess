@@ -1,6 +1,10 @@
-#include "jcl_board.h"
+/*!
+ * \file jcl_board.cpp
+ *
+ * This file contains the implementation for the Board object
+ */
 
-#include "jcl_consts.h"
+#include "jcl_board.h"
 
 namespace jcl
 {

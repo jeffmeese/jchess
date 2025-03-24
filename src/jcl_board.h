@@ -1,3 +1,9 @@
+/*!
+ * \file jcl_board.h
+ *
+ * This file contains the interface for the Board object
+ */
+
 #ifndef JCL_BOARD_H
 #define JCL_BOARD_H
 
@@ -20,6 +26,18 @@ namespace jcl
 class Board
 {
 public:
+  static constexpr uint8_t CASTLE_NONE              = 0x00;
+  static constexpr uint8_t CASTLE_WHITE_KING        = 0x01;
+  static constexpr uint8_t CASTLE_WHITE_QUEEN       = 0x02;
+  static constexpr uint8_t CASTLE_BLACK_KING        = 0x04;
+  static constexpr uint8_t CASTLE_BLACK_QUEEN       = 0x08;
+  static constexpr uint8_t INVALID_ENPASSANT_COLUMN = 8;
+
+  /*!
+   * \brief Constructor
+   *
+   * Defines a default Board object
+   */
   Board();
 
   /*!
@@ -281,6 +299,8 @@ public:
    */
   virtual bool unmakeMove(const Move * move) = 0;
 
+  virtual void printPerformanceMetrics() const = 0;
+
 protected:
 
   /*!
@@ -293,6 +313,12 @@ protected:
   virtual void doReset() = 0;
 
 private:
+
+  /*!
+   * \brief Initializes the board
+   *
+   * This function initializes the board to a default state.
+   */
   void init();
 
   uint8_t mCastlingRights;

@@ -1,3 +1,9 @@
+/*!
+ * \file jcl_timer.cpp
+ *
+ * This file contains the implementation for the Timer object
+ */
+
 #include "jcl_timer.h"
 
 namespace jcl

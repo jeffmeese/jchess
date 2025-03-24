@@ -1,17 +1,18 @@
 /*!
- * \file jcl_board8x8.h
+ * \file jcl_fastboard8x8.h
  *
- * This file contains the interface for the Board8x8 object
+ * This file contains the interface for the FastBoard8x8 object
  */
 
-#ifndef JCL_BOARD8X8_H
-#define JCL_BOARD8X8_H
+#ifndef JCL_FASTBOARD8X8_H
+#define JCL_FASTBOARD8X8_H
 
 #include <map>
 
 #include "jcl_board.h"
 #include "jcl_move.h"
 #include "jcl_movelist.h"
+#include "jcl_timer.h"
 
 namespace jcl
 {
@@ -33,7 +34,7 @@ namespace jcl
  * this class will never be able to match the performance of
  * more complex board representations such as bit boards.
  */
-class Board8x8
+class FastBoard8x8
     : public Board
 {
 public:
@@ -43,7 +44,7 @@ public:
    *
    * Constructs a default Board8x8 instance.
    */
-  Board8x8();
+  FastBoard8x8();
 
   // Methods
   bool generateMoves(MoveList & moveList) const override;
@@ -75,6 +76,23 @@ protected:
   void doReset() override;
 
 private:
+
+  bool checkPawnAttacks(uint8_t index,
+                        Color attackColor,
+                        bool diagonal,
+                        const uint8_t attackVector[][8]) const;
+
+  bool checkSlidingAttacks(uint8_t index,
+                           Color attackColor,
+                           Color friendlyColor,
+                           Piece attackingPiece,
+                           Piece attackingPiece2,
+                           const uint8_t attackVector[][8]) const;
+
+  bool checkNonSlidingAttacks(uint8_t index,
+                              Color attackColor,
+                              Piece piece,
+                              const uint8_t attackVector[][8]) const;
 
   /*!
    * \brief Generates the castling moves
@@ -156,6 +174,11 @@ private:
                          Color sideToMove,
                          MoveList & moveList) const;
 
+  void generateNonSliderMoves(uint8_t index,
+                              Piece piece,
+                              const uint8_t attackVector[][8],
+                              MoveList &moveList) const;
+
   /*!
    * \brief Generates non-pawn moves
    *
@@ -179,10 +202,14 @@ private:
    * \param moveList The list to hold the moves
    */
   void generateSliderMoves(uint8_t index,
-                           int8_t rowIncrement,
-                           int8_t colIncrement,
-                           bool slider,
+                           Piece piece,
+                           const uint8_t attackVector[][8],
                            MoveList & moveList) const;
+  //void generateSliderMoves(uint8_t index,
+  //                         int8_t rowIncrement,
+   //                        int8_t colIncrement,
+  //                         bool slider,
+  //                         MoveList & moveList) const;
 
   /*! \brief Initializes the board to it's initial state
    *
@@ -191,6 +218,8 @@ private:
    *  other data stored by the object.
    */
   void initBoard();
+
+  void initMoves();
 
   /*!
    * \brief Determines if a cell is attacked
@@ -242,10 +271,29 @@ private:
   // Members
   Piece mPieces[64];
   Color mColors[64];
+  uint8_t mNorthEastMoves[64][8];
+  uint8_t mNorthWestMoves[64][8];
+  uint8_t mSouthEastMoves[64][8];
+  uint8_t mSouthWestMoves[64][8];
+  uint8_t mNorthMoves[64][8];
+  uint8_t mSouthMoves[64][8];
+  uint8_t mEastMoves[64][8];
+  uint8_t mWestMoves[64][8];
+  uint8_t mKingMoves[64][8];
+  uint8_t mKnightMoves[64][8];
   std::map<Color, uint8_t> mKingColumn;
   std::map<Color, uint8_t> mKingRow;
+  //mutable jcl::Timer mSlideAttackTimer;
+  //mutable jcl::Timer mNonSlideAttackTimer;
+  //mutable jcl::Timer mPawnAttackTimer;
+  //mutable jcl::Timer mCastleTimer;
+  //mutable jcl::Timer mMakeMoveTimer;
+  //mutable jcl::Timer mUnmakeMoveTimer;
+  //mutable jcl::Timer mPawnTimer;
+  //mutable jcl::Timer mSliderTimer;
+  //mutable jcl::Timer mNonSliderTimer;
 };
 
 }
 
-#endif // #ifndef JCL_BOARD8X8_H
+#endif // #ifndef JCL_FASTBOARD8X8_H

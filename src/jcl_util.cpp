@@ -1,3 +1,9 @@
+/*!
+ * \file jcl_util.cpp
+ *
+ * This file defines some utility functions used in the jcl library
+ */
+
 #include "jcl_util.h"
 
 #include <algorithm>

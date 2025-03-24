@@ -1,3 +1,9 @@
+/*!
+ * \file jcl_evaluation.cpp
+ *
+ * This file contains the implementation for the Evaluation object
+ */
+
 #include "jcl_evaluation.h"
 
 #define getIndex(row,col) (((row)<<3)+(col))

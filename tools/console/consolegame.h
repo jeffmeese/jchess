@@ -2,6 +2,7 @@
 #define CONSOLEGAME_H
 
 #include "jcl_board.h"
+#include "jcl_evaluation.h"
 //#include "engine.h"
 #include "jcl_types.h"
 
@@ -10,7 +11,7 @@ class ConsoleGame
 {
 public:
   //ConsoleGame(Board * board, Engine * engine);
-  ConsoleGame(jcl::Board * board);
+  ConsoleGame(jcl::Board * board, jcl::Evaluation * evaluation);
 
 public:
   void run();
@@ -20,13 +21,12 @@ private:
   int32_t getMoveIndex(uint8_t srcRow, uint8_t srcCol, uint8_t dstRow, uint8_t dstCol, const jcl::MoveList & moveList) const;
   void doMove(const jcl::Move * move);
   void doPerft(int32_t perftLevel) const;
-  // void handleDivide(std::istringstream & iss) const;
+  void handleDivide(std::istringstream & iss) const;
   // void handleEngine();
-  // void handleEval() const;
-  // void handleFen() const;
+  void handleEval() const;
   void handleHelp() const;
   void handleMove(std::istringstream & iss);
-  // void handleNewGame();
+  void handleNewGame();
   void handlePerft(std::istringstream & iss) const;
   void handlePrint() const;
   void handleSetBoard(std::istringstream & iss);
@@ -42,6 +42,7 @@ private:
 
 private:
   jcl::Board * mBoard;
+  jcl::Evaluation * mEvaluation;
   //Engine * mEngine;
 };
 

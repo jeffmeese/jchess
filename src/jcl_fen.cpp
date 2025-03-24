@@ -1,3 +1,9 @@
+/*!
+ * \file jcl_fen.cpp
+ *
+ * This file contains the implementation for the Fen object
+ */
+
 #include "jcl_fen.h"
 
 #include <map>
@@ -5,7 +11,7 @@
 #include <sstream>
 #include <vector>
 
-#include "jcl_consts.h"
+#include "jcl_board.h"
 #include "jcl_util.h"
 
 namespace jcl
@@ -63,11 +69,19 @@ Color Fen::getSideToMove() const
 
 void Fen::init()
 {
-  mCastlingRights = CASTLE_BLACK_KING | CASTLE_BLACK_QUEEN | CASTLE_WHITE_KING | CASTLE_BLACK_QUEEN;
+  mCastlingRights = Board::CASTLE_BLACK_KING | Board::CASTLE_BLACK_QUEEN | Board::CASTLE_WHITE_KING | Board::CASTLE_BLACK_QUEEN;
   mSideToMove = Color::White;
-  mEnPassantColumn = INVALID_ENPASSANT_COLUMN;
+  mEnPassantColumn = Board::INVALID_ENPASSANT_COLUMN;
   mHalfMoveClock = 0;
   mFullMoveCounter = 1;
+
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    for (uint8_t j = 0; j < 8; j++)
+    {
+      mPieceType[i][j] = PieceType::None;
+    }
+  }
 
   for (uint8_t i = 0; i < 8; i++)
   {
@@ -91,6 +105,11 @@ void Fen::init()
 PieceType Fen::getPieceType(uint8_t row, uint8_t col) const
 {
   return mPieceType[row][col];
+}
+
+void Fen::setCasltingRights(uint8_t value)
+{
+  mCastlingRights = value;
 }
 
 bool Fen::setFromBoard(const Board * board)
@@ -250,31 +269,31 @@ bool Fen::setFromString(const std::string &fenString)
 
   mSideToMove = (sideString == "w") ? Color::White : Color::Black;
 
-  mCastlingRights = CASTLE_NONE;
+  mCastlingRights = Board::CASTLE_NONE;
   if (castleString != "-")
   {
     if (castleString.find_first_of("K") != std::string::npos)
     {
-      mCastlingRights |= CASTLE_WHITE_KING;
+      mCastlingRights |= Board::CASTLE_WHITE_KING;
     }
 
     if (castleString.find_first_of("Q") != std::string::npos)
     {
-      mCastlingRights |= CASTLE_WHITE_QUEEN;
+      mCastlingRights |= Board::CASTLE_WHITE_QUEEN;
     }
 
     if (castleString.find_first_of("k") != std::string::npos)
     {
-      mCastlingRights |= CASTLE_BLACK_KING;
+      mCastlingRights |= Board::CASTLE_BLACK_KING;
     }
 
     if (castleString.find_first_of("q") != std::string::npos)
     {
-      mCastlingRights |= CASTLE_BLACK_QUEEN;
+      mCastlingRights |= Board::CASTLE_BLACK_QUEEN;
     }
   }
 
-  mEnPassantColumn = INVALID_ENPASSANT_COLUMN;
+  mEnPassantColumn = Board::INVALID_ENPASSANT_COLUMN;
   if (epString != "-")
   {
     std::map<std::string, uint8_t> epMap;
@@ -384,22 +403,22 @@ std::string Fen::toString() const
   oss << ((mSideToMove == Color::White) ? " w " : " b ");
 
   std::string castleString;
-  if (mCastlingRights & CASTLE_WHITE_KING)
+  if (mCastlingRights & Board::CASTLE_WHITE_KING)
   {
     castleString += "K";
   }
 
-  if (mCastlingRights & CASTLE_WHITE_QUEEN)
+  if (mCastlingRights & Board::CASTLE_WHITE_QUEEN)
   {
     castleString += "Q";
   }
 
-  if (mCastlingRights & CASTLE_BLACK_KING)
+  if (mCastlingRights & Board::CASTLE_BLACK_KING)
   {
     castleString += "k";
   }
 
-  if (mCastlingRights & CASTLE_BLACK_QUEEN)
+  if (mCastlingRights & Board::CASTLE_BLACK_QUEEN)
   {
     castleString += "q";
   }
@@ -411,7 +430,7 @@ std::string Fen::toString() const
   oss << castleString << " ";
 
   std::string enPassantString;
-  if (mEnPassantColumn != INVALID_ENPASSANT_COLUMN)
+  if (mEnPassantColumn != Board::INVALID_ENPASSANT_COLUMN)
   {
     std::string s = enPassantMap[mEnPassantColumn];
     std::ostringstream ossEp;

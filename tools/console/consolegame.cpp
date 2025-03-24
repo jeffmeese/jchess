@@ -6,7 +6,6 @@
 #include <sstream>
 
 #include "jcl_board.h"
-#include "jcl_consts.h"
 #include "jcl_fen.h"
 #include "jcl_perft.h"
 #include "jcl_timer.h"
@@ -21,8 +20,9 @@ T readValue(std::istream & iss)
   return value;
 }
 
-ConsoleGame::ConsoleGame(jcl::Board * board)
+ConsoleGame::ConsoleGame(jcl::Board * board, jcl::Evaluation * evaluation)
     : mBoard(board)
+    , mEvaluation(evaluation)
 {
 }
 
@@ -77,16 +77,10 @@ void ConsoleGame::run()
     {
       handleShow();
     }
-    // else if (commandString == "divide")
-    //   handleDivide(iss);
-    // else if (commandString == "help")
-    //   handleHelp();
-    // else if (commandString == "print")
-    //   handlePrint();
-    // else if (commandString == "disp")
-    //   handlePrint();
-    // else if (commandString == "fen")
-    //   handleFen();
+    else if (commandString == "divide")
+    {
+      handleDivide(iss);
+    }
     else if (commandString == "perft")
     {
       handlePerft(iss);
@@ -100,15 +94,19 @@ void ConsoleGame::run()
        handleSetBoard(iss);
     }
     else if (commandString == "testmovegen")
+    {
       handleTestMoveGen();
-    // else if (commandString == "eval")
-    //   handleEval();
+    }
+    else if (commandString == "eval")
+    {
+      handleEval();
+    }
     // else if (commandString == "engine")
     //   handleEngine();
-    // else if (commandString == "new")
-    //   handleNewGame();
-    // else if (commandString == "show")
-    //   handleShow();
+    else if (commandString == "new")
+    {
+      handleNewGame();
+    }
     // else if (commandString == "undo")
     //   handleUndo();
     // else if (commandString == "twoplayer")
@@ -139,20 +137,52 @@ int32_t ConsoleGame::getMoveIndex(uint8_t srcRow, uint8_t srcCol, uint8_t dstRow
   return moveIndex;
 }
 
+void ConsoleGame::handleDivide(std::istringstream & iss) const
+{
+  uint8_t perftLevel = readLevel(iss);
+  if (perftLevel == 0)
+    return;
+
+  jcl::Perft perft(mBoard);
+  perft.divide(perftLevel);
+}
+
+void ConsoleGame::handleEval() const
+{
+  jcl::MoveList moveList;
+  mBoard->generateMoves(moveList);
+
+  for (uint8_t i = 0; i < moveList.size(); i++)
+  {
+    const jcl::Move * m = moveList[i];
+    std::cout << m->toSmithNotation() << " ";
+
+    mBoard->makeMove(m);
+    uint8_t kingRow = mBoard->getKingRow(!mBoard->getSideToMove());
+    uint8_t kingCol = mBoard->getKingColumn(!mBoard->getSideToMove());
+    if (!mBoard->isCellAttacked(kingRow, kingCol, mBoard->getSideToMove()))
+    {
+      double score = mEvaluation->evaluateBoard(mBoard);
+      std::cout << score << "\n";
+    }
+    mBoard->unmakeMove(m);
+  }
+}
+
 void ConsoleGame::handleHelp() const
 {
   std::cout << "quit.................Quits the program\n";
   std::cout << "help.................Displays this help menu\n";
   std::cout << "print................Prints the current board position\n";
   //std::cout << "disp.................Same as print\n";
-  //std::cout << "new..................Start a new game\n";
-  //std::cout << "eval.................Evaluation the current board position\n";
-  //std::cout << "move <smith>.........Performs a move\n";
-  //std::cout << "perft <level>........Counts the total number of nodes to depth <level>\n";
+  std::cout << "new..................Start a new game\n";
+  std::cout << "eval.................Evaluation the current board position\n";
+  std::cout << "move <smith>.........Performs a move\n";
+  std::cout << "perft <level>........Counts the total number of nodes to depth <level>\n";
   //std::cout << "divide <level>.......Displays the number of child moves\n";
   //std::cout << "table <level>........Displays a table of all perft results from 1 to <level>\n";
-  //std::cout << "setboard <fen>.......Sets the board position to <fen>\n";
-  //std::cout << "testmovegen..........Tests the move generator\n";
+  std::cout << "setboard <fen>.......Sets the board position to <fen>\n";
+  std::cout << "testmovegen..........Tests the move generator\n";
   //std::cout << "undo.................Undoes the last move\n";
 }
 
@@ -201,6 +231,11 @@ void ConsoleGame::handleMove(std::istringstream & iss)
 //  }
 }
 
+void ConsoleGame::handleNewGame()
+{
+  mBoard->reset();
+}
+
 void ConsoleGame::handlePerft(std::istringstream & iss) const
 {
   int32_t perftLevel = readLevel(iss);
@@ -208,6 +243,7 @@ void ConsoleGame::handlePerft(std::istringstream & iss) const
     return;
 
   doPerft(perftLevel);
+  mBoard->printPerformanceMetrics();
 }
 
 void ConsoleGame::handlePrint() const
@@ -245,13 +281,13 @@ void ConsoleGame::handlePrint() const
         if (row == 6) {
           uint8_t castling = mBoard->getCastlingRights();
           output << " Castling: ";
-          if (castling & jcl::CASTLE_WHITE_KING)
+          if (castling & jcl::Board::CASTLE_WHITE_KING)
             output << "K";
-          if (castling & jcl::CASTLE_WHITE_QUEEN)
+          if (castling & jcl::Board::CASTLE_WHITE_QUEEN)
             output << "Q";
-          if (castling & jcl::CASTLE_BLACK_KING)
+          if (castling & jcl::Board::CASTLE_BLACK_KING)
             output << "k";
-          if (castling & jcl::CASTLE_BLACK_QUEEN)
+          if (castling & jcl::Board::CASTLE_BLACK_QUEEN)
             output << "q";
         }
       }
@@ -330,8 +366,19 @@ void ConsoleGame::handleTestMoveGen() const
       std::string depthString = perftTokens.at(0);
       std::string nodesString = perftTokens.at(1);
 
-      uint8_t depthLevel = atoi(depthString.substr(1).c_str());
+      int32_t depthLevel = atoi(depthString.substr(1).c_str());
       uint64_t numNodes = atoi(nodesString.c_str());
+
+      // void ConsoleGame::doPerft(int32_t perftLevel) const
+      // {
+      //   jcl::Perft perft(mBoard);
+
+      //   jcl::Timer timer;
+      //   timer.start();
+      //   uint64_t totalNodes = perft.execute(perftLevel);
+      //   timer.stop();
+      //   std::cout << "Total Nodes: " << totalNodes << " Time: " << timer.elapsed()/1e3 << " milliseconds\n";
+      // }
 
       jcl::Timer timer;
       jcl::Perft perft(mBoard);
@@ -364,8 +411,6 @@ void ConsoleGame::handleShow() const
   {
     const jcl::Move * move = moveList.moveAt(i);
     bool validMove = false;
-    //uint8_t r = mBoard->getKingRow(mBoard->getSideToMove());
-    //uint8_t c = mBoard->getKingColumn(mBoard->getSideToMove());
     mBoard->makeMove(move);
     uint8_t kingRow = mBoard->getKingRow(!mBoard->getSideToMove());
     uint8_t kingCol = mBoard->getKingColumn(!mBoard->getSideToMove());
@@ -376,8 +421,6 @@ void ConsoleGame::handleShow() const
       validMove = true;
     }
     mBoard->unmakeMove(move);
-    //r = mBoard->getKingRow(mBoard->getSideToMove());
-    //c = mBoard->getKingColumn(mBoard->getSideToMove());
 
     if (validMove)
     {
@@ -454,41 +497,13 @@ int32_t ConsoleGame::readLevel(std::istream & iss) const
 
 
 
-// void ConsoleGame::handleDivide(std::istringstream & iss) const
-// {
-//   uint perftLevel = readLevel(iss);
-//   if (perftLevel == 0)
-//     return;
 
-//   Perft perft(mBoard);
-//   perft.divide(perftLevel);
-// }
 
 // void ConsoleGame::handleEngine()
 // {
 //   Move m = mEngine->generateMove();
 //   doMove(m);
 //   handlePrint();
-// }
-
-// void ConsoleGame::handleEval() const
-// {
-//   MoveList moveList;
-//   mBoard->generateMoves(moveList);
-
-//   for (uchar i = 0; i < moveList.size(); i++) {
-//     Move m = moveList[i];
-//     std::cout << m.toSmithNotation() << " ";
-
-//     mBoard->makeMove(m);
-//     uchar kingRow = mBoard->kingRow(!mBoard->sideToMove());
-//     uchar kingCol = mBoard->kingColumn(!mBoard->sideToMove());
-//     if (!mBoard->isCellAttacked(kingRow, kingCol, mBoard->sideToMove())) {
-//       double score = -mEngine->evaluation()->evaluate(mBoard);
-//       std::cout << score << "\n";
-//     }
-//     mBoard->unmakeMove(m);
-//   }
 // }
 
 // void ConsoleGame::handleFen() const
@@ -515,10 +530,7 @@ int32_t ConsoleGame::readLevel(std::istream & iss) const
 
 
 
-// void ConsoleGame::handleNewGame()
-// {
-//   restart();
-// }
+
 
 
 
