@@ -19,5 +19,7 @@ if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 endif()
 
+add_subdirectory(ext)
 add_subdirectory(src)
+add_subdirectory(test)
 add_subdirectory(tools)

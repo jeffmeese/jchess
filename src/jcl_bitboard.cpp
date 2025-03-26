@@ -1,11 +1,12 @@
 #include "jcl_bitboard.h"
-#include "jcl_fen.h"
-
-#include "jcl_move.h"
-#include "jcl_movelist.h"
 
 #include <cassert>
+#include <iomanip>
 #include <intrin.h>
+
+#include "jcl_fen.h"
+#include "jcl_move.h"
+#include "jcl_movelist.h"
 
 namespace jcl
 {
@@ -33,6 +34,7 @@ enum Square
 
 BitBoard::BitBoard()
 {
+  init();
   initBoard();
 }
 
@@ -65,7 +67,7 @@ uint8_t BitBoard::getKingRow(Color color) const
 PieceType BitBoard::getPieceType(uint8_t row, uint8_t col) const
 {
   uint8_t index = getIndex(row, col);
-  Piece type = mPieces[index];
+  BitBoardPiece type = mPieces[index];
   switch (type)
   {
   case WhitePawn:
@@ -126,34 +128,29 @@ void BitBoard::init()
 
 void BitBoard::initBoard()
 {
+  for (int i = 0; i < 12; i++)
+  {
+    mBitboards[i] = ZERO;
+  }
+
   mBitboards[WhiteRook] = (mMask[A1] | mMask[H1]);
-  mBitboards[WhiteBishop] = (mMask[B1] | mMask[G1]);
-  mBitboards[WhiteKnight] = (mMask[C1] | mMask[F1]);
+  mBitboards[WhiteKnight] = (mMask[B1] | mMask[G1]);
+  mBitboards[WhiteBishop] = (mMask[C1] | mMask[F1]);
   mBitboards[WhiteQueen] = mMask[D1];
-  mBitboards[WhiteQueen] = mMask[E1];
+  mBitboards[WhiteKing] = mMask[E1];
   for (int8_t i = A2; i <= H2; i++)
   {
     mBitboards[WhitePawn] |= mMask[i];
   }
-  for (int8_t i = WhitePawn; i <= WhiteKing; i++)
-  {
-    mWhitePieceBitboard |= mBitboards[i];
-    mAllPieceBitBoard |= mBitboards[i];
-  }
 
   mBitboards[BlackRook] = (mMask[A8] | mMask[H8]);
-  mBitboards[BlackBishop] = (mMask[B8] | mMask[G8]);
-  mBitboards[BlackKnight] = (mMask[C8] | mMask[F8]);
+  mBitboards[BlackKnight] = (mMask[B8] | mMask[G8]);
+  mBitboards[BlackBishop] = (mMask[C8] | mMask[F8]);
   mBitboards[BlackQueen] = mMask[D8];
-  mBitboards[BlackQueen] = mMask[E8];
+  mBitboards[BlackKing] = mMask[E8];
   for (int8_t i = A7; i <= H7; i++)
   {
     mBitboards[BlackPawn] |= mMask[i];
-  }
-  for (int8_t i = BlackPawn; i <= BlackKing; i++)
-  {
-    mBlackPieceBitboard |= mBitboards[i];
-    mAllPieceBitBoard |= mBitboards[i];
   }
 
   for (uint64_t i = 0; i < 64; i++)
@@ -181,21 +178,39 @@ void BitBoard::initBoard()
     mPieces[i] = BlackPawn;
   }
 
-  // writeBitBoard(mWhiteRooks, std::cout);
-  // writeBitBoard(mWhiteKnights, std::cout);
-  // writeBitBoard(mWhiteBishops, std::cout);
-  // writeBitBoard(mWhiteQueens, std::cout);
-  // writeBitBoard(mWhiteKings, std::cout);
-  // writeBitBoard(mWhitePawns, std::cout);
-  // writeBitBoard(mWhiteAll, std::cout);
+  mWhitePieceBitboard = 0;
+  for (uint8_t i = WhitePawn; i <= WhiteKing; i++)
+  {
+    mWhitePieceBitboard |= mBitboards[i];
+  }
 
-  // writeBitBoard(mBlackRooks, std::cout);
-  // writeBitBoard(mBlackKnights, std::cout);
-  // writeBitBoard(mBlackBishops, std::cout);
-  // writeBitBoard(mBlackQueens, std::cout);
-  // writeBitBoard(mBlackKings, std::cout);
-  // writeBitBoard(mBlackPawns, std::cout);
-  // writeBitBoard(mBlackAll, std::cout);
+  mBlackPieceBitboard = 0;
+  for (int i = BlackPawn; i <= BlackKing; i++)
+  {
+    mBlackPieceBitboard |= mBitboards[i];
+  }
+
+  updateAggregateBitBoards();
+
+  //std::cout << mBitboards[WhitePawn] << " " << mBitboards[BlackPawn] << std::endl;
+  std::cout << std::hex << std::setw(16) << std::setfill('0') << mBitboards[WhitePawn] << std::endl;
+  std::cout << std::hex << std::setw(16) << std::setfill('0') << mBitboards[BlackPawn] << std::endl;
+
+  // writeBitBoard(mBitboards[WhiteRook], std::cout);
+  // writeBitBoard(mBitboards[WhiteKnight], std::cout);
+  // writeBitBoard(mBitboards[WhiteBishop], std::cout);
+  // writeBitBoard(mBitboards[WhiteQueen], std::cout);
+  // writeBitBoard(mBitboards[WhiteKing], std::cout);
+  // writeBitBoard(mBitboards[WhitePawn], std::cout);
+  // writeBitBoard(mWhitePieceBitboard, std::cout);
+
+  // writeBitBoard(mBitboards[BlackRook], std::cout);
+  // writeBitBoard(mBitboards[BlackKnight], std::cout);
+  // writeBitBoard(mBitboards[BlackBishop], std::cout);
+  // writeBitBoard(mBitboards[BlackQueen], std::cout);
+  // writeBitBoard(mBitboards[BlackKing], std::cout);
+  // writeBitBoard(mBitboards[BlackPawn], std::cout);
+  // writeBitBoard(mBlackPieceBitboard, std::cout);
 }
 
 bool BitBoard::isCellAttacked(uint8_t row, uint8_t col, Color attackingColor) const
@@ -210,16 +225,39 @@ bool BitBoard::makeMove(const Move * move)
   uint8_t fromSquare = getIndex(move->getSourceRow(), move->getSourceColumn());
   uint8_t toSquare = getIndex(move->getDestinationRow(), move->getDestinationColumn());
 
-  Piece fromPiece = mPieces[fromSquare];
-  Piece toPiece = mPieces[toSquare];
+  BitBoardPiece fromPiece = mPieces[fromSquare];
+  //Piece toPiece = mPieces[toSquare];
 
   uint64_t bbFrom = ONE << fromSquare;
   uint64_t bbTo = ONE << toSquare;
   uint64_t bbFromTo = bbFrom ^ bbTo;
-  writeBitBoard(bbFrom, std::cout);
-  writeBitBoard(bbTo, std::cout);
-  writeBitBoard(bbFromTo, std::cout);
+  std::cout << static_cast<int>(move->getSourceRow()) << " " << static_cast<int>(move->getSourceColumn()) << " " << static_cast<int>(fromSquare) << std::endl;
+  std::cout << static_cast<int>(fromPiece) << std::endl;
 
+  //writeBitBoard(bbFrom, std::cout);
+  //writeBitBoard(bbTo, std::cout);
+  //writeBitBoard(bbFromTo, std::cout);
+  //writeBitBoard(mBitboards[fromPiece], std::cout);
+
+  mBitboards[fromPiece] ^= bbFromTo;
+  mPieces[toSquare] = fromPiece;
+  mPieces[fromSquare] = BitBoardPiece::None;
+  writeBitBoard(mBitboards[fromPiece], std::cout);
+
+  if (move->isCapture() || move->isPromotionCapture())
+  {
+    jcl::Piece capturePiece = move->getCapturedPiece();
+    BitBoardPiece bbPiece = translatePiece(capturePiece, otherSide);
+    mBitboards[bbPiece] ^= bbFromTo;
+    writeBitBoard(mBitboards[fromPiece], std::cout);
+  }
+
+  if (move->isDoublePush())
+  {
+    setEnPassantColumn(move->getSourceColumn());
+  }
+
+  updateAggregateBitBoards();
   setSideToMove(otherSide);
 
   return true;
@@ -241,12 +279,176 @@ bool BitBoard::setPosition(const std::string & fenString)
 
   initBoard();
 
+  for (uint8_t i = 0; i < 12; i++)
+  {
+    mBitboards[i] = 0;
+  }
+
+  for (uint8_t i = 0; i < 64; i++)
+  {
+    mPieces[i] = BitBoardPiece::None;
+  }
+
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    for (uint8_t j = 0; j < 8; j++)
+    {
+      uint8_t index = getIndex(i, j);
+      PieceType pieceType = fen.getPieceType(i, j);
+
+      switch (pieceType)
+      {
+      case PieceType::WhitePawn:
+        mPieces[index] = BitBoardPiece::WhitePawn;
+        mBitboards[WhitePawn] |= mMask[index];
+        break;
+      case PieceType::WhiteRook:
+        mPieces[index] = BitBoardPiece::WhiteRook;
+        mBitboards[WhiteRook] |= mMask[index];
+        break;
+      case PieceType::WhiteKnight:
+        mPieces[index] = BitBoardPiece::WhiteKnight;
+        mBitboards[WhiteKnight] |= mMask[index];
+        break;
+      case PieceType::WhiteBishop:
+        mPieces[index] = BitBoardPiece::WhiteBishop;
+        mBitboards[WhiteBishop] |= mMask[index];
+        break;
+      case PieceType::WhiteQueen:
+        mPieces[index] = BitBoardPiece::WhiteQueen;
+        mBitboards[WhiteQueen] |= mMask[index];
+        break;
+      case PieceType::WhiteKing:
+        mPieces[index] = BitBoardPiece::WhiteKing;
+        mBitboards[WhiteKing] |= mMask[index];
+        //mKingRow[Color::White] = i;
+        //mKingColumn[Color::White] = j;
+        break;
+      case PieceType::BlackPawn:
+        mPieces[index] = BitBoardPiece::BlackPawn;
+        mBitboards[BlackPawn] |= mMask[index];
+        break;
+      case PieceType::BlackRook:
+        mPieces[index] = BitBoardPiece::BlackRook;
+        mBitboards[BlackRook] |= mMask[index];
+        break;
+      case PieceType::BlackKnight:
+        mPieces[index] = BitBoardPiece::BlackKnight;
+        mBitboards[BlackKnight] |= mMask[index];
+        break;
+      case PieceType::BlackBishop:
+        mPieces[index] = BitBoardPiece::BlackBishop;
+        mBitboards[BlackBishop] |= mMask[index];
+        break;
+      case PieceType::BlackQueen:
+        mPieces[index] = BitBoardPiece::BlackQueen;
+        mBitboards[BlackQueen] |= mMask[index];
+        break;
+      case PieceType::BlackKing:
+        mPieces[index] = BitBoardPiece::BlackKing;
+        mBitboards[BlackKing] |= mMask[index];
+        //mKingRow[Color::Black] = i;
+        //mKingColumn[Color::Black] = j;
+        break;
+      case PieceType::None:
+        mPieces[index] = BitBoardPiece::None;
+        break;
+      }
+    }
+  }
+
+  setCastlingRights(fen.getCastlingRights());
+  setEnPassantColumn(fen.getEnPassantColumn());
+  setFullMoveCounter(fen.getFullMoveCounter());
+  setHalfMoveClock(fen.getHalfMoveClock());
+  setSideToMove(fen.getSideToMove());
+
+  updateAggregateBitBoards();
+
   return true;
 }
+
+BitBoard::BitBoardPiece BitBoard::translatePiece(Piece piece, Color color) const
+{
+  BitBoardPiece pieceType = None;
+
+  if (color == Color::White)
+  {
+    switch (piece)
+    {
+    case Piece::Pawn:
+      pieceType = WhitePawn;
+      break;
+    case Piece::Rook:
+      pieceType = WhiteRook;
+      break;
+    case Piece::Knight:
+      pieceType = WhiteKnight;
+      break;
+    case Piece::Bishop:
+      pieceType = WhiteBishop;
+      break;
+    case Piece::Queen:
+      pieceType = WhiteQueen;
+      break;
+    case Piece::King:
+      pieceType = WhiteKing;
+      break;
+    default:
+      break;
+    }
+  }
+  else
+  {
+    switch (piece)
+    {
+    case Piece::Pawn:
+      pieceType = BlackPawn;
+      break;
+    case Piece::Rook:
+      pieceType = BlackRook;
+      break;
+    case Piece::Knight:
+      pieceType = BlackKnight;
+      break;
+    case Piece::Bishop:
+      pieceType = BlackBishop;
+      break;
+    case Piece::Queen:
+      pieceType = BlackQueen;
+      break;
+    case Piece::King:
+      pieceType = BlackKing;
+      break;
+    default:
+      break;
+    }
+  }
+
+  return pieceType;
+}
+
 
 bool BitBoard::unmakeMove(const Move * move)
 {
   return true;
+}
+
+void BitBoard::updateAggregateBitBoards()
+{
+  mWhitePieceBitboard = mBlackPieceBitboard = mAllPieceBitBoard = 0;
+
+  for (int8_t i = WhitePawn; i <= WhiteKing; i++)
+  {
+    mWhitePieceBitboard |= mBitboards[i];
+    mAllPieceBitBoard |= mBitboards[i];
+  }
+
+  for (int8_t i = BlackPawn; i <= BlackKing; i++)
+  {
+    mBlackPieceBitboard |= mBitboards[i];
+    mAllPieceBitBoard |= mBitboards[i];
+  }
 }
 
 void BitBoard::writeBitBoard(uint64_t bb, std::ostream & output) const

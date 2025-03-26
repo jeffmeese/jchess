@@ -17,6 +17,14 @@ class BitBoard
 public:
   BitBoard();
 
+  uint64_t getBishops(Color color) const;
+  uint64_t getKings(Color color) const;
+  uint64_t getKnights(Color color) const;
+  uint64_t getPawns(Color color) const;
+  uint64_t getPieces(Color color) const;
+  uint64_t getQueens(Color color) const;
+  uint64_t getRooks(Color color) const;
+
   bool generateMoves(MoveList & moveList) const override;
   bool generateMoves(uint8_t row, uint8_t col, MoveList & moveList) const override;
   uint8_t getKingColumn(Color color) const override;
@@ -32,7 +40,7 @@ protected:
   void doReset() override;
 
 private:
-  enum Piece
+  enum BitBoardPiece
   {
     WhitePawn = 0,
     WhiteRook,
@@ -51,6 +59,8 @@ private:
 
   void init();
   void initBoard();
+  BitBoardPiece translatePiece(Piece piece, Color color) const;
+  void updateAggregateBitBoards();
   void writeBitBoard(uint64_t bb, std::ostream & output) const;
 
   uint64_t mAllPieceBitBoard;     // Bit board for all pieces
@@ -59,10 +69,45 @@ private:
   uint64_t mWhitePieceBitboard;   // Bit board for all white piece
   uint64_t mMask[64];             // Bit board masks for each square
   uint64_t mBitboards[12];        // Bitboard for each type of piece
-  Piece mPieces[64];              // Piece on each square
-  std::map<Piece, jcl::PieceType> mPieceToType;
-  //PieceType mPieceType[64];       // Piece type on each square
+  BitBoardPiece mPieces[64];      // BitBoardPiece on each square
+  std::map<BitBoardPiece, jcl::PieceType> mPieceToType;
+  //PieceType mPieceType[64];     // Piece type on each square
 };
+
+inline uint64_t BitBoard::getBishops(Color color) const
+{
+  return (color == Color::White) ? mBitboards[WhiteBishop] : mBitboards[BlackBishop];
+}
+
+inline uint64_t BitBoard::getKings(Color color) const
+{
+  return (color == Color::White) ? mBitboards[WhiteKing] : mBitboards[BlackKing];
+}
+
+inline uint64_t BitBoard::getKnights(Color color) const
+{
+  return (color == Color::White) ? mBitboards[WhiteKnight] : mBitboards[BlackKnight];
+}
+
+inline uint64_t BitBoard::getPawns(Color color) const
+{
+  return (color == Color::White) ? mBitboards[WhitePawn] : mBitboards[BlackPawn];
+}
+
+inline uint64_t BitBoard::getPieces(Color color) const
+{
+  return (color == Color::White) ? mWhitePieceBitboard : mBlackPieceBitboard;
+}
+
+inline uint64_t BitBoard::getQueens(Color color) const
+{
+  return (color == Color::White) ? mBitboards[WhiteQueen] : mBitboards[BlackQueen];
+}
+
+inline uint64_t BitBoard::getRooks(Color color) const
+{
+  return (color == Color::White) ? mBitboards[WhiteRook] : mBitboards[BlackRook];
+}
 
 // class BitBoard
 //     : public Board
