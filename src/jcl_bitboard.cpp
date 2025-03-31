@@ -14,14 +14,14 @@ namespace jcl
 // Square definition
 enum Square
 {
-  A1, B1, C1, D1, E1, F1, G1, H1,
-  A2, B2, C2, D2, E2, F2, G2, H2,
-  A3, B3, C3, D3, E3, F3, G3, H3,
-  A4, B4, C4, D4, E4, F4, G4, H4,
-  A5, B5, C5, D5, E5, F5, G5, H5,
-  A6, B6, C6, D6, E6, F6, G6, H6,
-  A7, B7, C7, D7, E7, F7, G7, H7,
-  A8, B8, C8, D8, E8, F8, G8, H8
+  A1 =  0, B1, C1, D1, E1, F1, G1, H1,
+  A2 =  8, B2, C2, D2, E2, F2, G2, H2,
+  A3 = 16, B3, C3, D3, E3, F3, G3, H3,
+  A4 = 24, B4, C4, D4, E4, F4, G4, H4,
+  A5 = 32, B5, C5, D5, E5, F5, G5, H5,
+  A6 = 40, B6, C6, D6, E6, F6, G6, H6,
+  A7 = 48, B7, C7, D7, E7, F7, G7, H7,
+  A8 = 56, B8, C8, D8, E8, F8, G8, H8
 };
 
 #define ZERO 0LL
@@ -193,8 +193,11 @@ void BitBoard::initBoard()
   updateAggregateBitBoards();
 
   //std::cout << mBitboards[WhitePawn] << " " << mBitboards[BlackPawn] << std::endl;
-  std::cout << std::hex << std::setw(16) << std::setfill('0') << mBitboards[WhitePawn] << std::endl;
-  std::cout << std::hex << std::setw(16) << std::setfill('0') << mBitboards[BlackPawn] << std::endl;
+  // std::cout << std::hex << std::setw(16) << std::setfill('0') << mBitboards[WhitePawn] << std::endl;
+  // std::cout << std::hex << std::setw(16) << std::setfill('0') << mBitboards[BlackPawn] << std::endl;
+  // std::cout << std::hex << std::setw(16) << std::setfill('0') << mBitboards[WhiteQueen] << std::endl;
+  // std::cout << std::hex << std::setw(16) << std::setfill('0') << mBitboards[BlackQueen] << std::endl;
+  // std::cout << std::hex << std::setw(16) << std::setfill('0') << mBitboards[BlackKing] << std::endl;
 
   // writeBitBoard(mBitboards[WhiteRook], std::cout);
   // writeBitBoard(mBitboards[WhiteKnight], std::cout);
@@ -257,8 +260,21 @@ bool BitBoard::makeMove(const Move * move)
     setEnPassantColumn(move->getSourceColumn());
   }
 
+  setHalfMoveClock(getHalfMoveClock() + 1);
+  if (move->getPiece() == Piece::Pawn || move->isCapture())
+  {
+    setHalfMoveClock(0);
+  }
+
+  if (sideToMove == Color::Black)
+  {
+    setFullMoveCounter(getFullMoveNumber() + 1);
+  }
+
   updateAggregateBitBoards();
   setSideToMove(otherSide);
+
+  std::cout << std::hex << std::setw(16) << std::setfill('0') << mBitboards[WhitePawn] << std::endl;
 
   return true;
 }
