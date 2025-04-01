@@ -59,19 +59,23 @@ private:
 
   void init();
   void initBoard();
+  void makeCastleMove(uint8_t destinationSquare);
   BitBoardPiece translatePiece(Piece piece, Color color) const;
   void updateAggregateBitBoards();
+  void updateCastlingRights(uint8_t fromSquare, uint8_t toSquare);
+  void updateMoveClocks(const Move * move);
   void writeBitBoard(uint64_t bb, std::ostream & output) const;
 
-  uint64_t mAllPieceBitBoard;     // Bit board for all pieces
-  uint64_t mBlackPieceBitboard;   // Bit board for all black pieces
-  uint64_t mNoPieceBitboard;      // Bit board for unoccupied squares
-  uint64_t mWhitePieceBitboard;   // Bit board for all white piece
-  uint64_t mMask[64];             // Bit board masks for each square
-  uint64_t mBitboards[12];        // Bitboard for each type of piece
-  BitBoardPiece mPieces[64];      // BitBoardPiece on each square
-  std::map<BitBoardPiece, jcl::PieceType> mPieceToType;
-  //PieceType mPieceType[64];     // Piece type on each square
+  uint64_t mAllPieceBitBoard;                            // Bit board for all pieces
+  uint64_t mBlackPieceBitboard;                          // Bit board for all black pieces
+  uint64_t mNoPieceBitboard;                             // Bit board for unoccupied squares
+  uint64_t mWhitePieceBitboard;                          // Bit board for all white piece
+  uint64_t mMask[64];                                    // Bit board masks for each square
+  uint64_t mBitboards[12];                               // Bitboard for each type of piece
+  BitBoardPiece mPieces[64];                             // BitBoardPiece on each square
+  std::map<BitBoardPiece, jcl::PieceType> mPieceToType;  // Map of BitBoardPiece type to PieceType
+  std::map<Color, uint8_t> mKingColumn;                  // Column for king for each side
+  std::map<Color, uint8_t> mKingRow;                     // Row for king for each side
 };
 
 inline uint64_t BitBoard::getBishops(Color color) const

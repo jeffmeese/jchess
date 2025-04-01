@@ -8,6 +8,11 @@
 #include "jcl_move.h"
 #include "jcl_movelist.h"
 
+constexpr int8_t  NORTH          =  8;
+constexpr int8_t  SOUTH          = -8;
+constexpr int8_t  EAST           =  1;
+constexpr int8_t  WEST           = -1;
+
 namespace jcl
 {
 
@@ -56,12 +61,12 @@ bool BitBoard::generateMoves(uint8_t row, uint8_t col, MoveList & moveList) cons
 
 uint8_t BitBoard::getKingColumn(Color color) const
 {
-  return 0;
+  return mKingColumn.find(color)->second;
 }
 
 uint8_t BitBoard::getKingRow(Color color) const
 {
-  return 0;
+  return mKingRow.find(color)->second;
 }
 
 PieceType BitBoard::getPieceType(uint8_t row, uint8_t col) const
@@ -98,10 +103,6 @@ PieceType BitBoard::getPieceType(uint8_t row, uint8_t col) const
     break;
   }
   return PieceType::None;
-
-  //uint8_t index = getIndex(row, col);
-  //std::map<Piece, PieceType>::const_iterator itr = mPieceToType.find(mPieces[index]);
-  //return itr->second;
 }
 
 void BitBoard::init()
@@ -190,6 +191,11 @@ void BitBoard::initBoard()
     mBlackPieceBitboard |= mBitboards[i];
   }
 
+  mKingColumn[Color::White] = 4;
+  mKingRow[Color::White] = 0;
+  mKingColumn[Color::Black] = 4;
+  mKingRow[Color::Black] = 7;
+
   updateAggregateBitBoards();
 
   //std::cout << mBitboards[WhitePawn] << " " << mBitboards[BlackPawn] << std::endl;
@@ -221,60 +227,123 @@ bool BitBoard::isCellAttacked(uint8_t row, uint8_t col, Color attackingColor) co
   return true;
 }
 
+void BitBoard::makeCastleMove(uint8_t destinationSquare)
+{
+  // The King position has already been updated above
+  // so we simply need to update the rook position
+  if (destinationSquare == G8)
+  {
+    mPieces[F8] = BitBoardPiece::BlackRook;
+    mPieces[H8] = BitBoardPiece::None;
+    mBitboards[BlackRook] ^= (ONE << H8);
+    mBitboards[BlackRook] |= (ONE << F8);
+  }
+  else if (destinationSquare == C8)
+  {
+    mPieces[D8] = BitBoardPiece::BlackRook;
+    mPieces[H8] = BitBoardPiece::None;
+    mBitboards[BlackRook] ^= (ONE << A8);
+    mBitboards[BlackRook] |= (ONE << D8);
+  }
+  else if (destinationSquare == G1)
+  {
+    mPieces[F1] = BitBoardPiece::WhiteRook;
+    mPieces[H1] = BitBoardPiece::None;
+    mBitboards[WhiteRook] ^= (ONE << H1);
+    mBitboards[WhiteRook] |= (ONE << F1);
+
+  }
+  else if (destinationSquare == C1)
+  {
+    mPieces[D1] = BitBoardPiece::WhiteRook;
+    mPieces[H1] = BitBoardPiece::None;
+    mBitboards[WhiteRook] ^= (ONE << A1);
+    mBitboards[WhiteRook] |= (ONE << D1);
+  }
+}
+
 bool BitBoard::makeMove(const Move * move)
 {
   Color sideToMove = this->getSideToMove();
   Color otherSide = (sideToMove == Color::White) ? Color::Black : Color::White;
-  uint8_t fromSquare = getIndex(move->getSourceRow(), move->getSourceColumn());
-  uint8_t toSquare = getIndex(move->getDestinationRow(), move->getDestinationColumn());
+  uint8_t sourceSquare = getIndex(move->getSourceRow(), move->getSourceColumn());
+  uint8_t destinationSquare = getIndex(move->getDestinationRow(), move->getDestinationColumn());
 
-  BitBoardPiece fromPiece = mPieces[fromSquare];
-  //Piece toPiece = mPieces[toSquare];
-
-  uint64_t bbFrom = ONE << fromSquare;
-  uint64_t bbTo = ONE << toSquare;
+  BitBoardPiece fromPiece = mPieces[sourceSquare];
+  uint64_t bbFrom = ONE << sourceSquare;
+  uint64_t bbTo = ONE << destinationSquare;
   uint64_t bbFromTo = bbFrom ^ bbTo;
-  std::cout << static_cast<int>(move->getSourceRow()) << " " << static_cast<int>(move->getSourceColumn()) << " " << static_cast<int>(fromSquare) << std::endl;
-  std::cout << static_cast<int>(fromPiece) << std::endl;
 
-  //writeBitBoard(bbFrom, std::cout);
-  //writeBitBoard(bbTo, std::cout);
-  //writeBitBoard(bbFromTo, std::cout);
-  //writeBitBoard(mBitboards[fromPiece], std::cout);
-
+  // Update for a quiet move
   mBitboards[fromPiece] ^= bbFromTo;
-  mPieces[toSquare] = fromPiece;
-  mPieces[fromSquare] = BitBoardPiece::None;
-  writeBitBoard(mBitboards[fromPiece], std::cout);
+  mPieces[destinationSquare] = fromPiece;
+  mPieces[sourceSquare] = BitBoardPiece::None;
 
+  // Update for capture moves, except for en-passant captures
+  // Those are handled below
   if (move->isCapture() || move->isPromotionCapture())
   {
     jcl::Piece capturePiece = move->getCapturedPiece();
     BitBoardPiece bbPiece = translatePiece(capturePiece, otherSide);
     mBitboards[bbPiece] ^= bbFromTo;
-    writeBitBoard(mBitboards[fromPiece], std::cout);
   }
 
+  // Update for a promotion moves
+  if (move->isPromotion())
+  {
+    BitBoardPiece bbPiece = translatePiece(move->getPromotedPiece(), sideToMove);
+    mPieces[destinationSquare] = bbPiece;
+    mBitboards[bbPiece] = (ONE << destinationSquare);
+  }
+
+  // Update for an enpassant capture
+  if (move->isEnPassantCapture())
+  {
+    int8_t dir = NORTH;
+    BitBoardPiece piece = WhitePawn;
+    BitBoardPiece enemyPiece = BlackPawn;
+    if (sideToMove == Color::Black)
+    {
+      dir = SOUTH;
+      piece = BlackPawn;
+      enemyPiece = WhitePawn;
+    }
+
+    int8_t epColumn = getEnpassantColumn();
+    uint8_t epIndex = getIndex(move->getSourceRow(), epColumn) + dir;
+    uint8_t captureIndex = getIndex(move->getSourceRow(), epColumn);
+
+    mBitboards[piece] |= (ONE << epIndex);
+    mBitboards[enemyPiece] ^= (ONE << captureIndex);
+    mBitboards[enemyPiece] ^= (ONE << epIndex);
+    mBitboards[enemyPiece] ^= (ONE << sourceSquare);
+  }
+
+  // Update for a double pawn push
+  setEnPassantColumn(INVALID_ENPASSANT_COLUMN);
   if (move->isDoublePush())
   {
     setEnPassantColumn(move->getSourceColumn());
   }
 
-  setHalfMoveClock(getHalfMoveClock() + 1);
-  if (move->getPiece() == Piece::Pawn || move->isCapture())
+  // Update for king moves
+  if (move->getPiece() == Piece::King)
   {
-    setHalfMoveClock(0);
+    mKingRow[sideToMove] = move->getDestinationRow();
+    mKingColumn[sideToMove] = move->getDestinationColumn();
   }
 
-  if (sideToMove == Color::Black)
+  // Update for castling moves
+  if (move->isCastle())
   {
-    setFullMoveCounter(getFullMoveNumber() + 1);
+    makeCastleMove(destinationSquare);
   }
 
+  // Update other board state
+  updateCastlingRights(sourceSquare, destinationSquare);
+  updateMoveClocks(move);
   updateAggregateBitBoards();
   setSideToMove(otherSide);
-
-  std::cout << std::hex << std::setw(16) << std::setfill('0') << mBitboards[WhitePawn] << std::endl;
 
   return true;
 }
@@ -337,8 +406,8 @@ bool BitBoard::setPosition(const std::string & fenString)
       case PieceType::WhiteKing:
         mPieces[index] = BitBoardPiece::WhiteKing;
         mBitboards[WhiteKing] |= mMask[index];
-        //mKingRow[Color::White] = i;
-        //mKingColumn[Color::White] = j;
+        mKingRow[Color::White] = i;
+        mKingColumn[Color::White] = j;
         break;
       case PieceType::BlackPawn:
         mPieces[index] = BitBoardPiece::BlackPawn;
@@ -363,8 +432,8 @@ bool BitBoard::setPosition(const std::string & fenString)
       case PieceType::BlackKing:
         mPieces[index] = BitBoardPiece::BlackKing;
         mBitboards[BlackKing] |= mMask[index];
-        //mKingRow[Color::Black] = i;
-        //mKingColumn[Color::Black] = j;
+        mKingRow[Color::Black] = i;
+        mKingColumn[Color::Black] = j;
         break;
       case PieceType::None:
         mPieces[index] = BitBoardPiece::None;
@@ -464,6 +533,75 @@ void BitBoard::updateAggregateBitBoards()
   {
     mBlackPieceBitboard |= mBitboards[i];
     mAllPieceBitBoard |= mBitboards[i];
+  }
+}
+
+void BitBoard::updateCastlingRights(uint8_t fromSquare, uint8_t toSquare)
+{
+  uint8_t castling = this->getCastlingRights();
+
+  switch (fromSquare)
+  {
+  case H1:
+    castling &= ~CASTLE_WHITE_KING;
+    break;
+  case E1:
+    castling &= ~(CASTLE_WHITE_KING|CASTLE_WHITE_QUEEN);
+    break;
+  case A1:
+    castling &= ~CASTLE_WHITE_QUEEN;
+    break;
+  case H8:
+    castling &= ~CASTLE_BLACK_KING;
+    break;
+  case E8:
+    castling &= ~(CASTLE_BLACK_KING|CASTLE_BLACK_QUEEN);
+    break;
+  case A8:
+    castling &= ~CASTLE_BLACK_QUEEN;
+    break;
+  default:
+    break;
+  }
+
+  switch (toSquare)
+  {
+  case H1:
+    castling &= ~CASTLE_WHITE_KING;
+    break;
+  case E1:
+    castling &= ~(CASTLE_WHITE_KING|CASTLE_WHITE_QUEEN);
+    break;
+  case A1:
+    castling &= ~CASTLE_WHITE_QUEEN;
+    break;
+  case H8:
+    castling &= ~CASTLE_BLACK_KING;
+    break;
+  case E8:
+    castling &= ~(CASTLE_BLACK_KING|CASTLE_BLACK_QUEEN);
+    break;
+  case A8:
+    castling &= ~CASTLE_BLACK_QUEEN;
+    break;
+  default:
+    break;
+  }
+
+  setCastlingRights(castling);
+}
+
+void BitBoard::updateMoveClocks(const Move * move)
+{
+  setHalfMoveClock(getHalfMoveClock() + 1);
+  if (move->getPiece() == Piece::Pawn || move->isCapture())
+  {
+    setHalfMoveClock(0);
+  }
+
+  if (getSideToMove() == Color::Black)
+  {
+    setFullMoveCounter(getFullMoveNumber() + 1);
   }
 }
 
