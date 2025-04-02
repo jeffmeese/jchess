@@ -1213,15 +1213,7 @@ void FastBoard8x8::pushMove(uint8_t from, uint8_t to, Piece piece, Piece capture
   uint8_t destRow = getRow(to);
   uint8_t destCol = getCol(to);
 
-  Move newMove(sourceRow, sourceColumn, destRow, destCol, piece);
-  newMove.setCapturedPiece(capturedPiece);
-  newMove.setPromotedPiece(promotedPiece);
-  newMove.setCastlingRights(this->getCastlingRights());
-  newMove.setEnpassantColumn(this->getEnpassantColumn());
-  newMove.setHalfMoveClock(this->getHalfMoveClock());
-  newMove.setFullMoveCounter(this->getFullMoveNumber());
-  newMove.setType(type);
-
+  Move newMove(sourceRow, sourceColumn, destRow, destCol, piece, type, this, capturedPiece, promotedPiece);
   moveList.addMove(newMove);
 }
 

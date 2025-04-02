@@ -14,6 +14,8 @@
 namespace jcl
 {
 
+class Board;
+
 /*!
  * \brief Defines a chess move
  *
@@ -65,7 +67,15 @@ public:
    * \param destCol The ending column for the move
    * \param piece The piece that is moving
    */
-  Move(uint8_t sourceRow, uint8_t sourceCol, uint8_t destRow, uint8_t destCol, Piece piece);
+  Move(uint8_t sourceRow,
+       uint8_t sourceCol,
+       uint8_t destRow,
+       uint8_t destCol,
+       Piece piece,
+       Type type,
+       const Board * board,
+       Piece capturePiece = Piece::None,
+       Piece promotionPiece = Piece::None);
 
   /*!
    * \brief Returns the capture piece
@@ -288,7 +298,7 @@ public:
    *
    * \param piece The captured piece
    */
-  void setCapturedPiece(Piece piece);
+  //void setCapturedPiece(Piece piece);
 
   /*!
    * \brief Sets the castling rights before the move
@@ -299,7 +309,7 @@ public:
    *
    * \param value The castling rights before the move
    */
-  void setCastlingRights(uint8_t value);
+  //void setCastlingRights(uint8_t value);
 
   /*!
    * \brief Sets the desination column for the move
@@ -310,7 +320,7 @@ public:
    *
    * \param value The destination column for the move
    */
-  void setDestinationColumn(uint8_t value);
+  //void setDestinationColumn(uint8_t value);
 
   /*!
    * \brief Sets the desination row for the move
@@ -321,7 +331,7 @@ public:
    *
    * \param value The destination row for the move
    */
-  void setDestinationRow(uint8_t value);
+  //void setDestinationRow(uint8_t value);
 
   /*!
    * \brief Sets the enpassant capture column
@@ -336,7 +346,7 @@ public:
    *
    * \param value The enpassant capture column
    */
-  void setEnpassantColumn(uint8_t value);
+  //void setEnpassantColumn(uint8_t value);
 
   /*!
    * \brief Sets the move type
@@ -347,7 +357,7 @@ public:
    *
    * \param value The move type
    */
-  void setType(Type value);
+  //void setType(Type value);
 
   /*!
    * \brief Sets the full move counter before the move
@@ -358,7 +368,7 @@ public:
    *
    * \param value The full move counter before the move
    */
-  void setFullMoveCounter(uint32_t value);
+  //void setFullMoveCounter(uint32_t value);
 
   /*!
    * \brief Sets the half move clock before the move
@@ -369,7 +379,7 @@ public:
    *
    * \param value The half move clock before the move
    */
-  void setHalfMoveClock(uint32_t value);
+  //void setHalfMoveClock(uint32_t value);
 
   /*!
    * \brief Sets the piece associated with the move
@@ -380,7 +390,7 @@ public:
    *
    * \param value The piece associated with the move
    */
-  void setPiece(Piece piece);
+  //void setPiece(Piece piece);
 
   /*!
    * \brief Sets the promoted piece associated with the move if any.
@@ -390,7 +400,7 @@ public:
    *
    * \param piece The promoted piece
    */
-  void setPromotedPiece(Piece piece);
+  //void setPromotedPiece(Piece piece);
 
   /*!
    * \brief Sets the source column for the move
@@ -401,7 +411,7 @@ public:
    *
    * \param value The source column for the move
    */
-  void setSourceColumn(uint8_t value);
+  //void setSourceColumn(uint8_t value);
 
   /*!
    * \brief Sets the source row for the move
@@ -412,7 +422,7 @@ public:
    *
    * \param value The source row for the move
    */
-  void setSourceRow(uint8_t value);
+  //void setSourceRow(uint8_t value);
 
   /*!
    * \brief Writes the move to a string in smith notation
@@ -529,65 +539,65 @@ inline uint8_t Move::getSourceRow() const
   return mSourceRow;
 }
 
-inline void Move::setCapturedPiece(Piece piece)
-{
-  mCapturedPiece = piece;
-}
+// inline void Move::setCapturedPiece(Piece piece)
+// {
+//   mCapturedPiece = piece;
+// }
 
-inline void Move::setCastlingRights(uint8_t castling)
-{
-  mCastlingRights = castling;
-}
+// inline void Move::setCastlingRights(uint8_t castling)
+// {
+//   mCastlingRights = castling;
+// }
 
-inline void Move::setDestinationColumn(uint8_t col)
-{
-  mDestinationColumn = col;
-}
+// inline void Move::setDestinationColumn(uint8_t col)
+// {
+//   mDestinationColumn = col;
+// }
 
-inline void Move::setDestinationRow(uint8_t row)
-{
-  mDestinationRow = row;
-}
+// inline void Move::setDestinationRow(uint8_t row)
+// {
+//   mDestinationRow = row;
+// }
 
-inline void Move::setEnpassantColumn(uint8_t col)
-{
-  mEnPassantColumn = col;
-}
+// inline void Move::setEnpassantColumn(uint8_t col)
+// {
+//   mEnPassantColumn = col;
+// }
 
-inline void Move::setType(Move::Type flags)
-{
-  mType = flags;
-}
+// inline void Move::setType(Move::Type flags)
+// {
+//   mType = flags;
+// }
 
-inline void Move::setFullMoveCounter(uint32_t value)
-{
-  mFullMoveCounter = value;
-}
+// inline void Move::setFullMoveCounter(uint32_t value)
+// {
+//   mFullMoveCounter = value;
+// }
 
-inline void Move::setHalfMoveClock(uint32_t value)
-{
-  mHalfMoveClock = value;
-}
+// inline void Move::setHalfMoveClock(uint32_t value)
+// {
+//   mHalfMoveClock = value;
+// }
 
-inline void Move::setPiece(Piece piece)
-{
-  mPiece = piece;
-}
+// inline void Move::setPiece(Piece piece)
+// {
+//   mPiece = piece;
+// }
 
-inline void Move::setPromotedPiece(Piece piece)
-{
-  mPromotedPiece = piece;
-}
+// inline void Move::setPromotedPiece(Piece piece)
+// {
+//   mPromotedPiece = piece;
+// }
 
-inline void Move::setSourceColumn(uint8_t col)
-{
-  mSourceColumn = col;
-}
+// inline void Move::setSourceColumn(uint8_t col)
+// {
+//   mSourceColumn = col;
+// }
 
-inline void Move::setSourceRow(uint8_t row)
-{
-  mSourceRow = row;
-}
+// inline void Move::setSourceRow(uint8_t row)
+// {
+//   mSourceRow = row;
+// }
 
 }
 

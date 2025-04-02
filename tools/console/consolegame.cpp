@@ -206,23 +206,23 @@ void ConsoleGame::handleMove(std::istringstream & iss)
   if (!parseMovePos(moveString, srcRow, srcCol, dstRow, dstCol))
     return;
 
-  jcl::Move move(srcRow, srcCol, dstRow, dstCol, jcl::Piece::Pawn);
-  doMove(&move);
-  return;
+  // jcl::Move move(srcRow, srcCol, dstRow, dstCol, jcl::Piece::Pawn);
+  // doMove(&move);
+  // return;
 
-  // Generate the candidate moves from the board
-  jcl::MoveList moveList;
-  mBoard->generateMoves(moveList);
+  // // Generate the candidate moves from the board
+  // jcl::MoveList moveList;
+  // mBoard->generateMoves(moveList);
 
-  // Check that the move is valid
-  int moveIndex = getMoveIndex(srcRow, srcCol, dstRow, dstCol, moveList);
-  if (moveIndex == -1) {
-    std::cout << "Sorry " << moveString << " is not a valid move\n";
-    std::cout << "Type divide 1 to sell all available moves\n";
-    return;
-  }
+  // // Check that the move is valid
+  // int moveIndex = getMoveIndex(srcRow, srcCol, dstRow, dstCol, moveList);
+  // if (moveIndex == -1) {
+  //   std::cout << "Sorry " << moveString << " is not a valid move\n";
+  //   std::cout << "Type divide 1 to sell all available moves\n";
+  //   return;
+  // }
 
-  doMove(moveList.moveAt(moveIndex));
+  // doMove(moveList.moveAt(moveIndex));
   //if (isOver()) {
   //  showEndGame();
   //  return;

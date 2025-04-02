@@ -13,17 +13,28 @@
 namespace jcl
 {
 
-Move::Move(uint8_t sourceRow, uint8_t sourceCol, uint8_t destRow, uint8_t destCol, Piece piece)
+Move::Move(uint8_t sourceRow,
+           uint8_t sourceCol,
+           uint8_t destRow,
+           uint8_t destCol,
+           Piece piece,
+           Type type,
+           const Board * board,
+           Piece capturePiece,
+           Piece promotionPiece)
 {
   mSourceRow = sourceRow;
   mSourceColumn = sourceCol;
   mDestinationRow = destRow;
   mDestinationColumn = destCol;
   mPiece = piece;
-  mCapturedPiece = mPromotedPiece = Piece::None;
-  mType = Type::Quiet;
-  mEnPassantColumn = 8;
-  mCastlingRights = Board::CASTLE_NONE;
+  mCapturedPiece = capturePiece;
+  mPromotedPiece = promotionPiece;
+  mType = type;
+  mHalfMoveClock = board->getHalfMoveClock();
+  mFullMoveCounter = board->getFullMoveNumber();
+  mCastlingRights = board->getCastlingRights();
+  mEnPassantColumn = board->getEnpassantColumn();
 }
 
 bool Move::isValid() const
