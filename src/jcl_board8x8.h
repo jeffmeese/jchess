@@ -45,34 +45,17 @@ public:
    */
   Board8x8();
 
-  // Methods
-  bool generateMoves(MoveList & moveList) const override;
-
-  bool generateMoves(uint8_t row,
-                     uint8_t col,
-                     MoveList & moveList) const override;
-
-  uint8_t getKingColumn(Color color) const override;
-
-  uint8_t getKingRow(Color color) const override;
-
-  PieceType getPieceType(uint8_t row,
-                         uint8_t col) const override;
-
-  bool isCellAttacked(uint8_t row,
-                      uint8_t col,
-                      Color attackColor) const override;
-
-  bool makeMove(const Move * move) override;
-
-  bool setPosition(const std::string & fenString) override;
-
-  bool unmakeMove(const Move * move) override;
-
-  void printPerformanceMetrics() const override;
-
 protected:
+
+  // Overrides
+  bool doGenerateMoves(MoveList & moveList) const override;
+  bool doGenerateMoves(uint8_t row, uint8_t col, MoveList & moveList) const override;
+  PieceType doGetPieceType(uint8_t row, uint8_t col) const override;
+  bool doIsCellAttacked(uint8_t row, uint8_t col, Color attackColor) const override;
+  bool doMakeMove(const Move * move) override;
   void doReset() override;
+  bool doSetPosition(const Fen & fenData) override;
+  bool doUnmakeMove(const Move * move) override;
 
 private:
 
@@ -208,42 +191,9 @@ private:
    */
   bool isCellAttacked(uint8_t index, Color attackColor) const;
 
-  /*!
-   * \brief Pushes a move on to the move list
-   *
-   * This function pushes a move on to the move list and stores
-   * information in the move that determine how to undo the move.
-   *
-   * The from and to parameters determine the starting and ending
-   * point for the move. The piece parameter specifies the type of
-   * piece that is moving. The capturedPiece argument specifies the
-   * piece that is captured by the move if any. The promotedPiece
-   * argument specifies the piece a pawn is promoted to when the
-   * move is a promotion. The type parameter specifies the type
-   * of move that is being perform. See the \ref Move class for a
-   * description of the types of moves available.
-   *
-   * \param from The starting index of the move
-   * \param to The ending index of the move
-   * \param piece The piece that is moving.
-   * \param capturedPiece The piece captured by the move, if any
-   * \param promotedPiece The promoted piece type for promotion moves
-   * \param type The move type
-   * \param moveList The move list to hold the move
-   */
-  void pushMove(uint8_t from,
-                uint8_t to,
-                Piece piece,
-                Piece capturedPiece,
-                Piece promotedPiece,
-                Move::Type type,
-                MoveList & moveList) const;
-
   // Members
   Piece mPieces[64];
   Color mColors[64];
-  std::map<Color, uint8_t> mKingColumn;
-  std::map<Color, uint8_t> mKingRow;
 };
 
 }

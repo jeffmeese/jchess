@@ -195,68 +195,75 @@ bool Fen::setFromString(const std::string &fenString)
 
   for (int8_t i = 0; i < 8; i++)
   {
+    int8_t row = 7 - i;
     uint8_t columnIndex = 0;
     std::string rowString = pieceTokens[i];
+    if (rowString.size() > 8)
+    {
+      std::cerr << "Invalid piece string in FEN string: " << rowString << std::endl;
+      return false;
+    }
+
     for (std::size_t j = 0; j < rowString.size(); j++)
     {
       if (rowString[j] == 'P')
       {
-        mPieceType[7-i][columnIndex] = PieceType::WhitePawn;
+        mPieceType[row][columnIndex] = PieceType::WhitePawn;
         columnIndex++;
       }
       else if (rowString[j] == 'R')
       {
-        mPieceType[7-i][columnIndex] = PieceType::WhiteRook;
+        mPieceType[row][columnIndex] = PieceType::WhiteRook;
         columnIndex++;
       }
       else if (rowString[j] == 'N')
       {
-        mPieceType[7-i][columnIndex] = PieceType::WhiteKnight;
+        mPieceType[row][columnIndex] = PieceType::WhiteKnight;
         columnIndex++;
       }
       else if (rowString[j] == 'B')
       {
-        mPieceType[7-i][columnIndex] = PieceType::WhiteBishop;
+        mPieceType[row][columnIndex] = PieceType::WhiteBishop;
         columnIndex++;
       }
       else if (rowString[j] == 'Q')
       {
-        mPieceType[7-i][columnIndex] = PieceType::WhiteQueen;
+        mPieceType[row][columnIndex] = PieceType::WhiteQueen;
         columnIndex++;
       }
       else if (rowString[j] == 'K')
       {
-        mPieceType[7-i][columnIndex] = PieceType::WhiteKing;
+        mPieceType[row][columnIndex] = PieceType::WhiteKing;
         columnIndex++;
       }
       else if (rowString[j] == 'p')
       {
-        mPieceType[7-i][columnIndex] = PieceType::BlackPawn;
+        mPieceType[row][columnIndex] = PieceType::BlackPawn;
         columnIndex++;
       }
       else if (rowString[j] == 'r')
       {
-        mPieceType[7-i][columnIndex] = PieceType::BlackRook;
+        mPieceType[row][columnIndex] = PieceType::BlackRook;
         columnIndex++;
       }
       else if (rowString[j] == 'n')
       {
-        mPieceType[7-i][columnIndex] = PieceType::BlackKnight;
+        mPieceType[row][columnIndex] = PieceType::BlackKnight;
         columnIndex++;
       }
       else if (rowString[j] == 'b')
       {
-        mPieceType[7-i][columnIndex] = PieceType::BlackBishop;
+        mPieceType[row][columnIndex] = PieceType::BlackBishop;
         columnIndex++;
       }
       else if (rowString[j] == 'q')
       {
-        mPieceType[7-i][columnIndex] = PieceType::BlackQueen;
+        mPieceType[row][columnIndex] = PieceType::BlackQueen;
         columnIndex++;
       }
       else if (rowString[j] == 'k')
       {
-        mPieceType[7-i][columnIndex] = PieceType::BlackKing;
+        mPieceType[row][columnIndex] = PieceType::BlackKing;
         columnIndex++;
       }
       else
@@ -266,6 +273,8 @@ bool Fen::setFromString(const std::string &fenString)
       }
     }
   }
+
+
 
   mSideToMove = (sideString == "w") ? Color::White : Color::Black;
 

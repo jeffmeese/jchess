@@ -247,7 +247,7 @@ void ConsoleGame::handlePerft(std::istringstream & iss) const
     return;
 
   doPerft(perftLevel);
-  mBoard->printPerformanceMetrics();
+  //mBoard->printPerformanceMetrics();
 }
 
 void ConsoleGame::handlePrint() const

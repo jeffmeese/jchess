@@ -15,29 +15,37 @@ class BitBoard
 : public Board
 {
 public:
+
+  /*!
+   * \brief Constructor
+   *
+   * Constructs a default BitBoard instance.
+   */
   BitBoard();
 
+  uint64_t getAll() const;
+  uint64_t getAll(Color color) const;
   uint64_t getBishops(Color color) const;
   uint64_t getKings(Color color) const;
   uint64_t getKnights(Color color) const;
+  uint64_t getNone() const;
   uint64_t getPawns(Color color) const;
   uint64_t getPieces(Color color) const;
   uint64_t getQueens(Color color) const;
   uint64_t getRooks(Color color) const;
 
-  bool generateMoves(MoveList & moveList) const override;
-  bool generateMoves(uint8_t row, uint8_t col, MoveList & moveList) const override;
-  uint8_t getKingColumn(Color color) const override;
-  uint8_t getKingRow(Color color) const override;
-  PieceType getPieceType(uint8_t row, uint8_t col) const override;
-  bool isCellAttacked(uint8_t row, uint8_t col, Color attackingColor) const override;
-  bool makeMove(const Move * move) override;
-  void printPerformanceMetrics() const override;
-  bool setPosition(const std::string & fenString) override;
-  bool unmakeMove(const Move * move) override;
-
 protected:
+
+  // Override
+  bool doGenerateMoves(MoveList & moveList) const override;
+  bool doGenerateMoves(uint8_t row, uint8_t col, MoveList & moveList) const override;
+  PieceType doGetPieceType(uint8_t row, uint8_t col) const override;
+  bool doIsCellAttacked(uint8_t row, uint8_t col, Color attackingColor) const override;
+  bool doMakeMove(const Move * move) override;
   void doReset() override;
+  bool doSetPieceType(uint8_t row, uint8_t col, PieceType pieceType) override;
+  bool doSetPosition(const Fen & fen) override;
+  bool doUnmakeMove(const Move * move) override;
 
 private:
   enum BitBoardPiece
@@ -57,26 +65,68 @@ private:
     None,
   };
 
+  /*!
+   * \brief Generates the castling moves
+   *
+   * This function generates the possible castling moves
+   * based on the current board position. Castling moves
+   * are only dependent of the current state of the board
+   * and the castling rights available so they only need
+   * to be generated once when all moves are being generated.
+   *
+   * \param moveList The move list to hold the moves
+   */
+  void generateCastlingMoves(MoveList & moveList) const;
+
+  void generateEvasiveMoves(uint8_t index, MoveList & moveList) const;
+
+  void generateMoves(uint8_t index, bool includeCastling, MoveList & moveList) const;
+
   void init();
+
   void initBoard();
-  void makeCastleMove(uint8_t destinationSquare);
+
+  /*!
+   * \brief Determines if a cell is attacked
+   *
+   * This function determines if the cell at the specified
+   * index is attacked by a piece of the specified color.
+   * This is primarily used by engines to determine if particular
+   * move is valid. Any moves that put the king in check are
+   * considered invalid moves.
+   *
+   * \param index The index of the square to check for attacks
+   * \param attackColor The color of the pieces that are attacking.
+   *
+   * \return true if the cell at the index is attacked, false otherwise
+   */
+  bool isCellAttacked(uint8_t index, Color attackColor) const;
+
   BitBoardPiece translatePiece(Piece piece, Color color) const;
   void updateAggregateBitBoards();
-  void updateCastlingRights(uint8_t fromSquare, uint8_t toSquare);
-  void updateMoveClocks(const Move * move);
   void writeBitBoard(uint64_t bb, std::ostream & output) const;
 
+  // Members
   uint64_t mAllPieceBitBoard;                            // Bit board for all pieces
   uint64_t mBlackPieceBitboard;                          // Bit board for all black pieces
   uint64_t mNoPieceBitboard;                             // Bit board for unoccupied squares
   uint64_t mWhitePieceBitboard;                          // Bit board for all white piece
   uint64_t mMask[64];                                    // Bit board masks for each square
   uint64_t mBitboards[12];                               // Bitboard for each type of piece
-  BitBoardPiece mPieces[64];                             // BitBoardPiece on each square
+  Piece mPieces[64];                                     // Piece type on each square
+  Color mColors[64];                                     // Color on each square
   std::map<BitBoardPiece, jcl::PieceType> mPieceToType;  // Map of BitBoardPiece type to PieceType
-  std::map<Color, uint8_t> mKingColumn;                  // Column for king for each side
-  std::map<Color, uint8_t> mKingRow;                     // Row for king for each side
 };
+
+inline uint64_t BitBoard::getAll() const
+{
+  return mAllPieceBitBoard;
+}
+
+inline uint64_t BitBoard::getAll(Color color) const
+{
+  return (color == Color::White) ? mWhitePieceBitboard : mBlackPieceBitboard;
+}
 
 inline uint64_t BitBoard::getBishops(Color color) const
 {
@@ -91,6 +141,11 @@ inline uint64_t BitBoard::getKings(Color color) const
 inline uint64_t BitBoard::getKnights(Color color) const
 {
   return (color == Color::White) ? mBitboards[WhiteKnight] : mBitboards[BlackKnight];
+}
+
+inline uint64_t BitBoard::getNone() const
+{
+  return mNoPieceBitboard;
 }
 
 inline uint64_t BitBoard::getPawns(Color color) const

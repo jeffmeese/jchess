@@ -65,12 +65,12 @@ enum class PieceType : int32_t
   WhiteBishop = 4,   /*!< Defines a white bishop */
   WhiteQueen = 5,    /*!< Defines a white queen */
   WhiteKing = 6,     /*!< Defines a white king */
-  BlackPawn = -1,    /*!< Defines a black pawn */
-  BlackRook = -2,    /*!< Defines a black rook */
-  BlackKnight = -3,  /*!< Defines a black knight */
-  BlackBishop = -4,  /*!< Defines a black bishop */
-  BlackQueen = -5,   /*!< Defines a black queen */
-  BlackKing = -6     /*!< Defines a black king */
+  BlackPawn = 7,     /*!< Defines a black pawn */
+  BlackRook = 8,     /*!< Defines a black rook */
+  BlackKnight = 9,   /*!< Defines a black knight */
+  BlackBishop = 10,  /*!< Defines a black bishop */
+  BlackQueen = 11,   /*!< Defines a black queen */
+  BlackKing = 12     /*!< Defines a black king */
 };
 
 }

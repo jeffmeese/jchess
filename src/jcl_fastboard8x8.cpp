@@ -106,6 +106,312 @@ inline bool FastBoard8x8::checkSlidingAttacks(uint8_t index,
   return false;
 }
 
+bool FastBoard8x8::doGenerateMoves(MoveList & moveList) const
+{
+  generateCastlingMoves(moveList);
+
+  for (int8_t row = 0; row < 8; row++)
+  {
+    for (int8_t col = 0; col < 8; col++)
+    {
+      generateMoves(row, col, moveList, false);
+    }
+  }
+  return true;
+}
+
+bool FastBoard8x8::doGenerateMoves(uint8_t row,
+    uint8_t col,
+    MoveList & moveList) const
+{
+  return generateMoves(row, col, moveList, true);
+}
+
+bool FastBoard8x8::doIsCellAttacked(uint8_t row, uint8_t col, Color attackColor) const
+{
+  return isCellAttacked(getIndex(row, col), attackColor);
+}
+
+bool FastBoard8x8::doMakeMove(const Move * move)
+{
+  //mMakeMoveTimer.start();
+
+  Color side = this->getSideToMove();
+  uint8_t fromSquare = getIndex(move->getSourceRow(), move->getSourceColumn());
+  uint8_t toSquare = getIndex(move->getDestinationRow(), move->getDestinationColumn());
+
+  // Update the color and piece arrays
+  mColors[fromSquare] = Color::None;
+  mPieces[fromSquare] = Piece::None;
+  mColors[toSquare] = side;
+  mPieces[toSquare] = move->getPiece();
+
+  // Handle enPassant captures
+  if (move->isEnPassantCapture())
+  {
+    char dir = (side == Color::White) ? SOUTH : NORTH;
+    uint8_t sq = toSquare + dir;
+    mPieces[sq] = Piece::None;
+    mColors[sq] = Color::None;
+  }
+
+  setEnPassantColumn(INVALID_ENPASSANT_COLUMN);
+  if (move->isDoublePush())
+  {
+    setEnPassantColumn(move->getDestinationColumn());
+  }
+
+  // Handle promotions
+  if (move->isPromotion() || move->isPromotionCapture())
+  {
+    mPieces[toSquare] = move->getPromotedPiece();
+  }
+
+  // // Update castling rights
+  // // If the square associated with a king or rook is
+  // // modified in any way remove the castling ability
+  // // for that piece
+  // uint8_t castling = this->getCastlingRights();
+  // switch (fromSquare)
+  // {
+  // case H1:
+  //   castling &= ~CASTLE_WHITE_KING;
+  //   break;
+  // case E1:
+  //   castling &= ~(CASTLE_WHITE_KING|CASTLE_WHITE_QUEEN);
+  //   break;
+  // case A1:
+  //   castling &= ~CASTLE_WHITE_QUEEN;
+  //   break;
+  // case H8:
+  //   castling &= ~CASTLE_BLACK_KING;
+  //   break;
+  // case E8:
+  //   castling &= ~(CASTLE_BLACK_KING|CASTLE_BLACK_QUEEN);
+  //   break;
+  // case A8:
+  //   castling &= ~CASTLE_BLACK_QUEEN;
+  //   break;
+  // }
+
+  // switch (toSquare)
+  // {
+  // case H1:
+  //   castling &= ~CASTLE_WHITE_KING;
+  //   break;
+  // case E1:
+  //   castling &= ~(CASTLE_WHITE_KING|CASTLE_WHITE_QUEEN);
+  //   break;
+  // case A1:
+  //   castling &= ~CASTLE_WHITE_QUEEN;
+  //   break;
+  // case H8:
+  //   castling &= ~CASTLE_BLACK_KING;
+  //   break;
+  // case E8:
+  //   castling &= ~(CASTLE_BLACK_KING|CASTLE_BLACK_QUEEN);
+  //   break;
+  // case A8:
+  //   castling &= ~CASTLE_BLACK_QUEEN;
+  //   break;
+  // }
+
+  // setCastlingRights(castling);
+
+  // Handle castle moves
+  if (move->isCastle())
+  {
+    switch (toSquare)
+    {
+    case C1:
+      mPieces[D1] = Piece::Rook;
+      mColors[D1] = Color::White;
+      mPieces[A1] = Piece::None;
+      mColors[A1] = Color::None;
+      break;
+    case G1:
+      mPieces[F1] = Piece::Rook;
+      mColors[F1] = Color::White;
+      mPieces[H1] = Piece::None;
+      mColors[H1] = Color::None;
+      break;
+    case C8:
+      mPieces[D8] = Piece::Rook;
+      mColors[D8] = Color::Black;
+      mPieces[A8] = Piece::None;
+      mColors[A8] = Color::None;
+      break;
+    case G8:
+      mPieces[F8] = Piece::Rook;
+      mColors[F8] = Color::Black;
+      mPieces[H8] = Piece::None;
+      mColors[H8] = Color::None;
+      break;
+    }
+  }
+
+  setHalfMoveClock(getHalfMoveClock()+1);
+  if (move->getPiece() == Piece::Pawn || move->isCapture())
+  {
+    setHalfMoveClock(0);
+  }
+
+  //mMakeMoveTimer.stop();
+
+  return true;
+}
+
+void FastBoard8x8::doReset()
+{
+  initBoard();
+}
+
+bool FastBoard8x8::doSetPosition(const Fen & fen)
+{
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    for (uint8_t j = 0; j < 8; j++)
+    {
+      uint8_t index = getIndex(i, j);
+      PieceType pieceType = fen.getPieceType(i, j);
+
+      switch (pieceType)
+      {
+      case PieceType::WhitePawn:
+        mPieces[index] = Piece::Pawn;
+        mColors[index] = Color::White;
+        break;
+      case PieceType::WhiteRook:
+        mPieces[index] = Piece::Rook;
+        mColors[index] = Color::White;
+        break;
+      case PieceType::WhiteKnight:
+        mPieces[index] = Piece::Knight;
+        mColors[index] = Color::White;
+        break;
+      case PieceType::WhiteBishop:
+        mPieces[index] = Piece::Bishop;
+        mColors[index] = Color::White;
+        break;
+      case PieceType::WhiteQueen:
+        mPieces[index] = Piece::Queen;
+        mColors[index] = Color::White;
+        break;
+      case PieceType::WhiteKing:
+        mPieces[index] = Piece::King;
+        mColors[index] = Color::White;
+        break;
+      case PieceType::BlackPawn:
+        mPieces[index] = Piece::Pawn;
+        mColors[index] = Color::Black;
+        break;
+      case PieceType::BlackRook:
+        mPieces[index] = Piece::Rook;
+        mColors[index] = Color::Black;
+        break;
+      case PieceType::BlackKnight:
+        mPieces[index] = Piece::Knight;
+        mColors[index] = Color::Black;
+        break;
+      case PieceType::BlackBishop:
+        mPieces[index] = Piece::Bishop;
+        mColors[index] = Color::Black;
+        break;
+      case PieceType::BlackQueen:
+        mPieces[index] = Piece::Queen;
+        mColors[index] = Color::Black;
+        break;
+      case PieceType::BlackKing:
+        mPieces[index] = Piece::King;
+        mColors[index] = Color::Black;
+        break;
+      case PieceType::None:
+        mPieces[index] = Piece::None;
+        mColors[index] = Color::None;
+        break;
+      }
+    }
+  }
+
+  return true;
+}
+
+bool FastBoard8x8::doUnmakeMove(const Move * move)
+{
+  // mUnmakeMoveTimer.start();
+
+  Color side = this->getSideToMove();
+  uint8_t fromSquare = getIndex(move->getSourceRow(), move->getSourceColumn());
+  uint8_t toSquare = getIndex(move->getDestinationRow(), move->getDestinationColumn());
+  Piece piece = move->getPiece();
+
+  // Update the piece and color arrays
+  mPieces[fromSquare] = piece;
+  mColors[fromSquare] = !side;
+  mPieces[toSquare] = Piece::None;
+  mColors[toSquare] = Color::None;
+
+  // Handle captures
+  if (move->isCapture())
+  {
+    uint8_t sq = toSquare;
+    if (move->isEnPassantCapture())
+    {
+      char dir = (side == Color::White) ? NORTH : SOUTH;
+      sq = toSquare + dir;
+    }
+
+    mPieces[sq] = move->getCapturedPiece();
+    mColors[sq] = side;
+  }
+
+  // Handle promotions
+  if (move->isPromotion() || move->isPromotionCapture())
+  {
+    mPieces[fromSquare] = Piece::Pawn;
+    if (move->isPromotionCapture())
+    {
+      mPieces[toSquare] = move->getCapturedPiece();
+    }
+  }
+
+  // Handle castling move
+  if (move->isCastle())
+  {
+    switch (toSquare)
+    {
+    case C1:
+      mPieces[A1] = Piece::Rook;
+      mColors[A1] = Color::White;
+      mPieces[D1] = Piece::None;
+      mColors[D1] = Color::None;
+      break;
+    case G1:
+      mPieces[H1] = Piece::Rook;
+      mColors[H1] = Color::White;
+      mPieces[F1] = Piece::None;
+      mColors[F1] = Color::None;
+      break;
+    case C8:
+      mPieces[A8] = Piece::Rook;
+      mColors[A8] = Color::Black;
+      mPieces[D8] = Piece::None;
+      mColors[D8] = Color::None;
+      break;
+    case G8:
+      mPieces[H8] = Piece::Rook;
+      mColors[H8] = Color::Black;
+      mPieces[F8] = Piece::None;
+      mColors[F8] = Color::None;
+      break;
+    }
+  }
+
+  //mUnmakeMoveTimer.stop();
+
+  return true;
+}
+
 void FastBoard8x8::generateCastlingMoves(MoveList & moveList) const
 {
   //mCastleTimer.start();
@@ -172,26 +478,6 @@ void FastBoard8x8::generateCastlingMoves(MoveList & moveList) const
   //mCastleTimer.stop();
 }
 
-bool FastBoard8x8::generateMoves(MoveList & moveList) const
-{
-  generateCastlingMoves(moveList);
-
-  for (int8_t row = 0; row < 8; row++)
-  {
-    for (int8_t col = 0; col < 8; col++)
-    {
-      generateMoves(row, col, moveList, false);
-    }
-  }
-  return true;
-}
-
-bool FastBoard8x8::generateMoves(uint8_t row,
-                             uint8_t col,
-                             MoveList & moveList) const
-{
-  return generateMoves(row, col, moveList, true);
-}
 
 bool FastBoard8x8::generateMoves(uint8_t row,
                                  uint8_t col,
@@ -415,7 +701,7 @@ void FastBoard8x8::generatePawnMoves(uint8_t index,
       destIndex = getIndex(doublePushRow, col);
       if (mPieces[destIndex] == Piece::None)
       {
-        pushMove(index, destIndex, Piece::Pawn, Piece::None, Piece::None, Move::Type::EpPush, moveList);
+        pushMove(index, destIndex, Piece::Pawn, Piece::None, Piece::None, Move::Type::DoublePush, moveList);
       }
     }
   }
@@ -472,18 +758,8 @@ void FastBoard8x8::generatePawnMoves(uint8_t index,
   //mPawnTimer.stop();
 }
 
-uint8_t FastBoard8x8::getKingColumn(Color color) const
-{
-  return mKingColumn.find(color)->second;
-}
-
-uint8_t FastBoard8x8::getKingRow(Color color) const
-{
-  return mKingRow.find(color)->second;
-}
-
-PieceType FastBoard8x8::getPieceType(uint8_t row,
-                                 uint8_t col) const
+PieceType FastBoard8x8::doGetPieceType(uint8_t row,
+                                     uint8_t col) const
 {
   Piece piece = mPieces[getIndex(row, col)];
   Color color = mColors[getIndex(row, col)];
@@ -551,11 +827,6 @@ void FastBoard8x8::initBoard()
   mPieces[C1] = mPieces[F1] = mPieces[C8] = mPieces[F8] = Piece::Bishop;
   mPieces[D1] = mPieces[D8] = Piece::Queen;
   mPieces[E1] = mPieces[E8] = Piece::King;
-
-  mKingColumn[Color::White] = 4;
-  mKingRow[Color::White] = 0;
-  mKingColumn[Color::Black] = 4;
-  mKingRow[Color::Black] = 7;
 }
 
 void FastBoard8x8::initMoves()
@@ -739,16 +1010,6 @@ void FastBoard8x8::initMoves()
       std::cout << "\n";
     }
   }
-}
-
-void FastBoard8x8::doReset()
-{
-  initBoard();
-}
-
-bool FastBoard8x8::isCellAttacked(uint8_t row, uint8_t col, Color attackColor) const
-{
-  return isCellAttacked(getIndex(row, col), attackColor);
 }
 
 bool FastBoard8x8::isCellAttacked(uint8_t index, Color attackColor) const
@@ -1052,159 +1313,6 @@ bool FastBoard8x8::isCellAttacked(uint8_t index, Color attackColor) const
   // return false;
 }
 
-bool FastBoard8x8::makeMove(const Move * move)
-{
-  //mMakeMoveTimer.start();
-
-  Color side = this->getSideToMove();
-  Color otherSide = (side == Color::White) ? Color::Black : Color::White;
-  uint8_t fromSquare = getIndex(move->getSourceRow(), move->getSourceColumn());
-  uint8_t toSquare = getIndex(move->getDestinationRow(), move->getDestinationColumn());
-
-  //std::cout << static_cast<int>(toSquare) << std::endl;
-
-  // Update the color and piece arrays
-  mColors[fromSquare] = Color::None;
-  mPieces[fromSquare] = Piece::None;
-  mColors[toSquare] = side;
-  mPieces[toSquare] = move->getPiece();
-
-  // Handle enPassant captures
-  if (move->isEnPassantCapture())
-  {
-    char dir = (side == Color::White) ? SOUTH : NORTH;
-    uint8_t sq = toSquare + dir;
-    mPieces[sq] = Piece::None;
-    mColors[sq] = Color::None;
-  }
-
-  // Handle king move
-  if (move->getPiece() == Piece::King)
-  {
-    mKingColumn[side] = move->getDestinationColumn();
-    mKingRow[side] = move->getDestinationRow();
-  }
-
-  setEnPassantColumn(INVALID_ENPASSANT_COLUMN);
-  if (move->isDoublePush())
-  {
-    setEnPassantColumn(move->getDestinationColumn());
-  }
-
-  // Handle promotions
-  if (move->isPromotion() || move->isPromotionCapture())
-  {
-    mPieces[toSquare] = move->getPromotedPiece();
-  }
-
-  // Update castling rights
-  // If the square associated with a king or rook is
-  // modified in any way remove the castling ability
-  // for that piece
-  uint8_t castling = this->getCastlingRights();
-  switch (fromSquare)
-  {
-  case H1:
-    castling &= ~CASTLE_WHITE_KING;
-    break;
-  case E1:
-    castling &= ~(CASTLE_WHITE_KING|CASTLE_WHITE_QUEEN);
-    break;
-  case A1:
-    castling &= ~CASTLE_WHITE_QUEEN;
-    break;
-  case H8:
-    castling &= ~CASTLE_BLACK_KING;
-    break;
-  case E8:
-    castling &= ~(CASTLE_BLACK_KING|CASTLE_BLACK_QUEEN);
-    break;
-  case A8:
-    castling &= ~CASTLE_BLACK_QUEEN;
-    break;
-  }
-
-  switch (toSquare)
-  {
-  case H1:
-    castling &= ~CASTLE_WHITE_KING;
-    break;
-  case E1:
-    castling &= ~(CASTLE_WHITE_KING|CASTLE_WHITE_QUEEN);
-    break;
-  case A1:
-    castling &= ~CASTLE_WHITE_QUEEN;
-    break;
-  case H8:
-    castling &= ~CASTLE_BLACK_KING;
-    break;
-  case E8:
-    castling &= ~(CASTLE_BLACK_KING|CASTLE_BLACK_QUEEN);
-    break;
-  case A8:
-    castling &= ~CASTLE_BLACK_QUEEN;
-    break;
-  }
-
-  setCastlingRights(castling);
-
-  // Handle castle moves
-  if (move->isCastle())
-  {
-    switch (toSquare)
-    {
-    case C1:
-      mPieces[D1] = Piece::Rook;
-      mColors[D1] = Color::White;
-      mPieces[A1] = Piece::None;
-      mColors[A1] = Color::None;
-      break;
-    case G1:
-      mPieces[F1] = Piece::Rook;
-      mColors[F1] = Color::White;
-      mPieces[H1] = Piece::None;
-      mColors[H1] = Color::None;
-      break;
-    case C8:
-      mPieces[D8] = Piece::Rook;
-      mColors[D8] = Color::Black;
-      mPieces[A8] = Piece::None;
-      mColors[A8] = Color::None;
-      break;
-    case G8:
-      mPieces[F8] = Piece::Rook;
-      mColors[F8] = Color::Black;
-      mPieces[H8] = Piece::None;
-      mColors[H8] = Color::None;
-      break;
-    }
-  }
-
-  setHalfMoveClock(getHalfMoveClock()+1);
-  if (move->getPiece() == Piece::Pawn || move->isCapture())
-  {
-    setHalfMoveClock(0);
-  }
-
-  setSideToMove(otherSide);
-
-  //mMakeMoveTimer.stop();
-
-  return true;
-}
-
-void FastBoard8x8::printPerformanceMetrics() const
-{
-  // std::cout << "Make Move:           " << mMakeMoveTimer.elapsed()/1e6 << " s" << std::endl;
-  // std::cout << "Unmake Move:         " << mUnmakeMoveTimer.elapsed()/1e6 << " s" << std::endl;
-  // std::cout << "Pawn Moves:          " << mPawnTimer.elapsed()/1e6 << " s" << std::endl;
-  // std::cout << "Non Slider Moves:    " << mNonSliderTimer.elapsed()/1e6 << " s" << std::endl;
-  // std::cout << "Slider Moves:        " << mSliderTimer.elapsed()/1e6 << " s" << std::endl;
-  // std::cout << "Castling Moves:      " << mCastleTimer.elapsed()/1e6 << " s" << std::endl;
-  // std::cout << "Pawn Attacks  :      " << mPawnAttackTimer.elapsed()/1e6 << " s" << std::endl;
-  // std::cout << "Sliding Attacks:     " << mSlideAttackTimer.elapsed()/1e6 << " s" << std::endl;
-  // std::cout << "Non-sliding attacks: " << mNonSlideAttackTimer.elapsed()/1e6 << " s" << std::endl;
-}
 
 void FastBoard8x8::pushMove(uint8_t from, uint8_t to, Piece piece, Piece capturedPiece, Piece promotedPiece, Move::Type type, MoveList & moveList) const
 {
@@ -1213,186 +1321,7 @@ void FastBoard8x8::pushMove(uint8_t from, uint8_t to, Piece piece, Piece capture
   uint8_t destRow = getRow(to);
   uint8_t destCol = getCol(to);
 
-  Move newMove(sourceRow, sourceColumn, destRow, destCol, piece, type, this, capturedPiece, promotedPiece);
-  moveList.addMove(newMove);
-}
-
-bool FastBoard8x8::setPosition(const std::string & fenString)
-{
-  Fen fen;
-  if (!fen.setFromString(fenString))
-  {
-    std::cout << "Invalid FEN string" << std::endl;
-    return false;
-  }
-
-  for (uint8_t i = 0; i < 8; i++)
-  {
-    for (uint8_t j = 0; j < 8; j++)
-    {
-      uint8_t index = getIndex(i, j);
-      PieceType pieceType = fen.getPieceType(i, j);
-
-      switch (pieceType)
-      {
-      case PieceType::WhitePawn:
-        mPieces[index] = Piece::Pawn;
-        mColors[index] = Color::White;
-        break;
-      case PieceType::WhiteRook:
-        mPieces[index] = Piece::Rook;
-        mColors[index] = Color::White;
-        break;
-      case PieceType::WhiteKnight:
-        mPieces[index] = Piece::Knight;
-        mColors[index] = Color::White;
-        break;
-      case PieceType::WhiteBishop:
-        mPieces[index] = Piece::Bishop;
-        mColors[index] = Color::White;
-        break;
-      case PieceType::WhiteQueen:
-        mPieces[index] = Piece::Queen;
-        mColors[index] = Color::White;
-        break;
-      case PieceType::WhiteKing:
-        mPieces[index] = Piece::King;
-        mColors[index] = Color::White;
-        mKingRow[Color::White] = i;
-        mKingColumn[Color::White] = j;
-        break;
-      case PieceType::BlackPawn:
-        mPieces[index] = Piece::Pawn;
-        mColors[index] = Color::Black;
-        break;
-      case PieceType::BlackRook:
-        mPieces[index] = Piece::Rook;
-        mColors[index] = Color::Black;
-        break;
-      case PieceType::BlackKnight:
-        mPieces[index] = Piece::Knight;
-        mColors[index] = Color::Black;
-        break;
-      case PieceType::BlackBishop:
-        mPieces[index] = Piece::Bishop;
-        mColors[index] = Color::Black;
-        break;
-      case PieceType::BlackQueen:
-        mPieces[index] = Piece::Queen;
-        mColors[index] = Color::Black;
-        break;
-      case PieceType::BlackKing:
-        mPieces[index] = Piece::King;
-        mColors[index] = Color::Black;
-        mKingRow[Color::Black] = i;
-        mKingColumn[Color::Black] = j;
-        break;
-      case PieceType::None:
-        mPieces[index] = Piece::None;
-        mColors[index] = Color::None;
-        break;
-      }
-    }
-  }
-
-  setCastlingRights(fen.getCastlingRights());
-  setEnPassantColumn(fen.getEnPassantColumn());
-  setFullMoveCounter(fen.getFullMoveCounter());
-  setHalfMoveClock(fen.getHalfMoveClock());
-  setSideToMove(fen.getSideToMove());
-
-  return true;
-}
-
-bool FastBoard8x8::unmakeMove(const Move * move)
-{
- // mUnmakeMoveTimer.start();
-
-  Color side = this->getSideToMove();
-  Color otherSide = (side == Color::White) ? Color::Black : Color::White;
-  uint8_t fromSquare = getIndex(move->getSourceRow(), move->getSourceColumn());
-  uint8_t toSquare = getIndex(move->getDestinationRow(), move->getDestinationColumn());
-  Piece piece = move->getPiece();
-
-  // Reset the board state from the move
-  setFullMoveCounter(move->getFullMoveCounter());
-  setHalfMoveClock(move->getHalfMoveClock());
-  setCastlingRights(move->getCastlingRights());
-  setEnPassantColumn(move->getEnPassantColumn());
-
-  // Update the piece and color arrays
-  mPieces[fromSquare] = piece;
-  mColors[fromSquare] = !side;
-  mPieces[toSquare] = Piece::None;
-  mColors[toSquare] = Color::None;
-
-  // Handle captures
-  if (move->isCapture())
-  {
-    uint8_t sq = toSquare;
-    if (move->isEnPassantCapture())
-    {
-      char dir = (side == Color::White) ? NORTH : SOUTH;
-      sq = toSquare + dir;
-    }
-
-    mPieces[sq] = move->getCapturedPiece();
-    mColors[sq] = side;
-  }
-
-  // Handle promotions
-  if (move->isPromotion() || move->isPromotionCapture())
-  {
-    mPieces[fromSquare] = Piece::Pawn;
-    if (move->isPromotionCapture())
-    {
-      mPieces[toSquare] = move->getCapturedPiece();
-    }
-  }
-
-  // Handle king moves
-  if (piece == Piece::King) {
-    mKingRow[otherSide] = move->getSourceRow();
-    mKingColumn[otherSide] = move->getSourceColumn();
-  }
-
-  // Handle castling move
-  if (move->isCastle())
-  {
-    switch (toSquare)
-    {
-    case C1:
-      mPieces[A1] = Piece::Rook;
-      mColors[A1] = Color::White;
-      mPieces[D1] = Piece::None;
-      mColors[D1] = Color::None;
-      break;
-    case G1:
-      mPieces[H1] = Piece::Rook;
-      mColors[H1] = Color::White;
-      mPieces[F1] = Piece::None;
-      mColors[F1] = Color::None;
-      break;
-    case C8:
-      mPieces[A8] = Piece::Rook;
-      mColors[A8] = Color::Black;
-      mPieces[D8] = Piece::None;
-      mColors[D8] = Color::None;
-      break;
-    case G8:
-      mPieces[H8] = Piece::Rook;
-      mColors[H8] = Color::Black;
-      mPieces[F8] = Piece::None;
-      mColors[F8] = Color::None;
-      break;
-    }
-  }
-
-  setSideToMove(otherSide);
-
-  //mUnmakeMoveTimer.stop();
-
-  return true;
+  Board::pushMove(sourceRow, sourceColumn, destRow, destCol, piece, capturedPiece, promotedPiece, type, moveList);
 }
 
 // // Macros for mapping (row,col)->index and vice-versa

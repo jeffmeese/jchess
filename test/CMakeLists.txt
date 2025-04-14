@@ -1,4 +1,5 @@
 set(TARGET_LIST
+  test_board
   test_bitboard
 )
 

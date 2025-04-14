@@ -46,34 +46,17 @@ public:
    */
   FastBoard8x8();
 
-  // Methods
-  bool generateMoves(MoveList & moveList) const override;
-
-  bool generateMoves(uint8_t row,
-                     uint8_t col,
-                     MoveList & moveList) const override;
-
-  uint8_t getKingColumn(Color color) const override;
-
-  uint8_t getKingRow(Color color) const override;
-
-  PieceType getPieceType(uint8_t row,
-                         uint8_t col) const override;
-
-  bool isCellAttacked(uint8_t row,
-                      uint8_t col,
-                      Color attackColor) const override;
-
-  bool makeMove(const Move * move) override;
-
-  bool setPosition(const std::string & fenString) override;
-
-  bool unmakeMove(const Move * move) override;
-
-  void printPerformanceMetrics() const override;
-
 protected:
+
+  // Overrides
+  bool doGenerateMoves(MoveList & moveList) const override;
+  bool doGenerateMoves(uint8_t row, uint8_t col, MoveList & moveList) const override;
+  PieceType doGetPieceType(uint8_t row, uint8_t col) const override;
+  bool doIsCellAttacked(uint8_t row, uint8_t col, Color attackColor) const override;
   void doReset() override;
+  bool doMakeMove(const Move * move) override;
+  bool doSetPosition(const Fen & fenData) override;
+  bool doUnmakeMove(const Move * move) override;
 
 private:
 
@@ -205,11 +188,6 @@ private:
                            Piece piece,
                            const uint8_t attackVector[][8],
                            MoveList & moveList) const;
-  //void generateSliderMoves(uint8_t index,
-  //                         int8_t rowIncrement,
-   //                        int8_t colIncrement,
-  //                         bool slider,
-  //                         MoveList & moveList) const;
 
   /*! \brief Initializes the board to it's initial state
    *
@@ -281,8 +259,6 @@ private:
   uint8_t mWestMoves[64][8];
   uint8_t mKingMoves[64][8];
   uint8_t mKnightMoves[64][8];
-  std::map<Color, uint8_t> mKingColumn;
-  std::map<Color, uint8_t> mKingRow;
   //mutable jcl::Timer mSlideAttackTimer;
   //mutable jcl::Timer mNonSlideAttackTimer;
   //mutable jcl::Timer mPawnAttackTimer;

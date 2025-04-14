@@ -9,11 +9,12 @@
 
 #include <string>
 
-#include "jcl_board.h"
 #include "jcl_types.h"
 
 namespace jcl
 {
+
+class Board;
 
 /*!
  * \brief Defines the Fen object

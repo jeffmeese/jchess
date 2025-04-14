@@ -14,8 +14,6 @@
 namespace jcl
 {
 
-class Board;
-
 /*!
  * \brief Defines a chess move
  *
@@ -34,6 +32,27 @@ class Move
 {
 public:
 
+  struct Position
+  {
+    uint8_t row;
+    uint8_t col;
+  };
+
+  struct BoardState
+  {
+    uint8_t castlingRights;
+    uint8_t enPassantColumn;
+    uint32_t halfMoveClock;
+    uint32_t fullMoveCounter;
+  };
+
+  struct Pieces
+  {
+    Piece piece;
+    Piece capturePiece;
+    Piece promotionPiece;
+  };
+
   /*!
    * \brief Defines a move type
    *
@@ -47,7 +66,7 @@ public:
     Capture = 1,          /*!< Defines a capture move */
     EpCapture = 2,        /*!< Defines an enpassant capture move */
     Castle = 3,           /*!< Defines a castling move */
-    EpPush = 4,           /*!< Defines a pawn double push move that allows for enpassant captures */
+    DoublePush = 4,       /*!< Defines a pawn double push move that allows for enpassant captures */
     Promotion = 5,        /*!< Defines a promotion of a pawn */
     PromotionCapture = 6, /*!< Defines a promotion of a pawn where an opposing piece is captured */
     Null = 7              /*!< Defines a NULL move, where a player does not move at all */
@@ -71,12 +90,21 @@ public:
        uint8_t sourceCol,
        uint8_t destRow,
        uint8_t destCol,
+       uint8_t castlingRights,
+       uint8_t enPassantColumn,
+       uint32_t halfMoveClock,
+       uint32_t fullMoveCounter,
        Piece piece,
        Type type,
-       const Board * board,
        Piece capturePiece = Piece::None,
        Piece promotionPiece = Piece::None);
 
+
+  Move(const Position & sourcePosition,
+       const Position & destinationPosition,
+       const Pieces & pieces,
+       const BoardState & boardState,
+       Type type);
   /*!
    * \brief Returns the capture piece
    *
@@ -257,6 +285,16 @@ public:
   bool isEnPassantCapture() const;
 
   /*!
+   * \brief Returns whether this move is a quiet move
+   *
+   * A quiet move is one that does not involve a capture
+   * or promotion and is not a castling move.
+   *
+   * \return true if this move is a promotion, false otherwise
+   */
+  bool isQuiet() const;
+
+  /*!
    * \brief Returns whether this move involves a promotion
    *
    * This function returns whether this move involves promoting
@@ -290,139 +328,6 @@ public:
    * \return true if this move is valid, false otherwise
    */
   bool isValid() const;
-
-  /*!
-   * \brief Sets the capture piece
-   *
-   * This function sets the captured piece for the move if any.
-   *
-   * \param piece The captured piece
-   */
-  //void setCapturedPiece(Piece piece);
-
-  /*!
-   * \brief Sets the castling rights before the move
-   *
-   * This function sets the castling rights of the board
-   * prior to the move being played. This allows the castling rights
-   * to be reset if this move is undone.
-   *
-   * \param value The castling rights before the move
-   */
-  //void setCastlingRights(uint8_t value);
-
-  /*!
-   * \brief Sets the desination column for the move
-   *
-   * This function sets the ending column for the move.
-   * Along with the destination row the ending square on the
-   * board is defined.
-   *
-   * \param value The destination column for the move
-   */
-  //void setDestinationColumn(uint8_t value);
-
-  /*!
-   * \brief Sets the desination row for the move
-   *
-   * This function sets the ending row for the move.
-   * Along with the destination column the ending square on the
-   * board is defined.
-   *
-   * \param value The destination row for the move
-   */
-  //void setDestinationRow(uint8_t value);
-
-  /*!
-   * \brief Sets the enpassant capture column
-   *
-   * This function sets the column associated with
-   * enpassant captures before the move when one is
-   * available. If an enpassant capture is not available
-   * the value parameter should be INVALID_ENPASSANT_COLUMN.
-   *
-   * This allows the enpassant capture column
-   * to be reset if this move is undone.
-   *
-   * \param value The enpassant capture column
-   */
-  //void setEnpassantColumn(uint8_t value);
-
-  /*!
-   * \brief Sets the move type
-   *
-   * This function sets the type of move
-   * being performed. The value parameter
-   * should be one from the \ref Type enumeration.
-   *
-   * \param value The move type
-   */
-  //void setType(Type value);
-
-  /*!
-   * \brief Sets the full move counter before the move
-   *
-   * This function sets the full move counter before
-   * the move is performed. This allows the full move counter
-   * to be reset if the move is undone.
-   *
-   * \param value The full move counter before the move
-   */
-  //void setFullMoveCounter(uint32_t value);
-
-  /*!
-   * \brief Sets the half move clock before the move
-   *
-   * This function sets the half move clock before
-   * the move is performed. This allows the half move clock
-   * to be reset if the move is undone.
-   *
-   * \param value The half move clock before the move
-   */
-  //void setHalfMoveClock(uint32_t value);
-
-  /*!
-   * \brief Sets the piece associated with the move
-   *
-   * This function sets the piece associated with the move.
-   * The piece parameter should be one of the values
-   * in the \ref Piece enumeration
-   *
-   * \param value The piece associated with the move
-   */
-  //void setPiece(Piece piece);
-
-  /*!
-   * \brief Sets the promoted piece associated with the move if any.
-   *
-   * This function sets the piece that a pawn will be promoted to
-   * if this is a promotion move.
-   *
-   * \param piece The promoted piece
-   */
-  //void setPromotedPiece(Piece piece);
-
-  /*!
-   * \brief Sets the source column for the move
-   *
-   * This function sets the starting column for the move.
-   * Along with the starting row the starting square on the
-   * board is defined.
-   *
-   * \param value The source column for the move
-   */
-  //void setSourceColumn(uint8_t value);
-
-  /*!
-   * \brief Sets the source row for the move
-   *
-   * This function sets the starting row for the move.
-   * Along with the starting column the starting square on the
-   * board is defined.
-   *
-   * \param value The source row for the move
-   */
-  //void setSourceRow(uint8_t value);
 
   /*!
    * \brief Writes the move to a string in smith notation
@@ -501,12 +406,17 @@ inline bool Move::isCastle() const
 
 inline bool Move::isDoublePush() const
 {
-  return (mType == Type::EpPush);
+  return (mType == Type::DoublePush);
 }
 
 inline bool Move::isEnPassantCapture() const
 {
   return (mType == Type::EpCapture);
+}
+
+inline bool Move::isQuiet() const
+{
+  return (mType == Type::Quiet);
 }
 
 inline bool Move::isPromotion() const

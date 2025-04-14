@@ -8,8 +8,6 @@
 
 #include <sstream>
 
-#include "jcl_board.h"
-
 namespace jcl
 {
 
@@ -17,9 +15,12 @@ Move::Move(uint8_t sourceRow,
            uint8_t sourceCol,
            uint8_t destRow,
            uint8_t destCol,
+           uint8_t castlingRights,
+           uint8_t enPassantColumn,
+           uint32_t halfMoveClock,
+           uint32_t fullMoveCounter,
            Piece piece,
            Type type,
-           const Board * board,
            Piece capturePiece,
            Piece promotionPiece)
 {
@@ -27,15 +28,62 @@ Move::Move(uint8_t sourceRow,
   mSourceColumn = sourceCol;
   mDestinationRow = destRow;
   mDestinationColumn = destCol;
+  mCastlingRights = castlingRights;
+  mEnPassantColumn = enPassantColumn;
+  mHalfMoveClock = halfMoveClock;
+  mFullMoveCounter = fullMoveCounter;
   mPiece = piece;
   mCapturedPiece = capturePiece;
   mPromotedPiece = promotionPiece;
   mType = type;
-  mHalfMoveClock = board->getHalfMoveClock();
-  mFullMoveCounter = board->getFullMoveNumber();
-  mCastlingRights = board->getCastlingRights();
-  mEnPassantColumn = board->getEnpassantColumn();
 }
+
+Move::Move(const Position & sourcePosition,
+           const Position & destinationPosition,
+           const Pieces & pieces,
+           const BoardState & boardState,
+           Type type)
+{
+  mSourceRow = sourcePosition.row;
+  mSourceColumn = sourcePosition.col;
+  mDestinationRow = destinationPosition.row;
+  mDestinationColumn = destinationPosition.col;
+  mPiece = pieces.piece;
+  mCapturedPiece = pieces.capturePiece;
+  mPromotedPiece = pieces.promotionPiece;
+  mCastlingRights = boardState.castlingRights;
+  mEnPassantColumn = boardState.enPassantColumn;
+  mHalfMoveClock = boardState.halfMoveClock;
+  mFullMoveCounter = boardState.fullMoveCounter;
+  mType = type;
+}
+
+// Move::Move(uint8_t sourceRow,
+//            uint8_t sourceCol,
+//            uint8_t destRow,
+//            uint8_t destCol,
+//            Piece piece,
+//            Type type,
+//            uint8_t castlingRights,
+//            uint8_t enPassantColumn,
+//            uint32_t halfMoveClock,
+//            uint32_t fullMoveCounter,
+//            Piece capturePiece,
+//            Piece promotionPiece)
+// {
+//   mSourceRow = sourceRow;
+//   mSourceColumn = sourceCol;
+//   mDestinationRow = destRow;
+//   mDestinationColumn = destCol;
+//   mPiece = piece;
+//   mCapturedPiece = capturePiece;
+//   mPromotedPiece = promotionPiece;
+//   mType = type;
+//   //mHalfMoveClock = board->getHalfMoveClock();
+//   //mFullMoveCounter = board->getFullMoveNumber();
+//   //mCastlingRights = board->getCastlingRights();
+//   //mEnPassantColumn = board->getEnpassantColumn();
+// }
 
 bool Move::isValid() const
 {
