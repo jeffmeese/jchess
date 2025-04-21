@@ -38,25 +38,25 @@ Move::Move(uint8_t sourceRow,
   mType = type;
 }
 
-Move::Move(const Position & sourcePosition,
-           const Position & destinationPosition,
-           const Pieces & pieces,
-           const BoardState & boardState,
-           Type type)
-{
-  mSourceRow = sourcePosition.row;
-  mSourceColumn = sourcePosition.col;
-  mDestinationRow = destinationPosition.row;
-  mDestinationColumn = destinationPosition.col;
-  mPiece = pieces.piece;
-  mCapturedPiece = pieces.capturePiece;
-  mPromotedPiece = pieces.promotionPiece;
-  mCastlingRights = boardState.castlingRights;
-  mEnPassantColumn = boardState.enPassantColumn;
-  mHalfMoveClock = boardState.halfMoveClock;
-  mFullMoveCounter = boardState.fullMoveCounter;
-  mType = type;
-}
+// Move::Move(const Position & sourcePosition,
+//            const Position & destinationPosition,
+//            const Pieces & pieces,
+//            const BoardState & boardState,
+//            Type type)
+// {
+//   mSourceRow = sourcePosition.row;
+//   mSourceColumn = sourcePosition.col;
+//   mDestinationRow = destinationPosition.row;
+//   mDestinationColumn = destinationPosition.col;
+//   mPiece = pieces.piece;
+//   mCapturedPiece = pieces.capturePiece;
+//   mPromotedPiece = pieces.promotionPiece;
+//   mCastlingRights = boardState.castlingRights;
+//   mEnPassantColumn = boardState.enPassantColumn;
+//   mHalfMoveClock = boardState.halfMoveClock;
+//   mFullMoveCounter = boardState.fullMoveCounter;
+//   mType = type;
+// }
 
 // Move::Move(uint8_t sourceRow,
 //            uint8_t sourceCol,

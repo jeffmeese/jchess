@@ -54,6 +54,7 @@ protected:
   bool doIsCellAttacked(uint8_t row, uint8_t col, Color attackColor) const override;
   bool doMakeMove(const Move * move) override;
   void doReset() override;
+  bool doSetPieceType(uint8_t row, uint8_t col, PieceType pieceType) override;
   bool doSetPosition(const Fen & fenData) override;
   bool doUnmakeMove(const Move * move) override;
 

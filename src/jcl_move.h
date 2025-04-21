@@ -95,16 +95,16 @@ public:
        uint32_t halfMoveClock,
        uint32_t fullMoveCounter,
        Piece piece,
-       Type type,
+       Type type = Type::Quiet,
        Piece capturePiece = Piece::None,
        Piece promotionPiece = Piece::None);
 
 
-  Move(const Position & sourcePosition,
-       const Position & destinationPosition,
-       const Pieces & pieces,
-       const BoardState & boardState,
-       Type type);
+  // Move(const Position & sourcePosition,
+  //      const Position & destinationPosition,
+  //      const Pieces & pieces,
+  //      const BoardState & boardState,
+  //      Type type);
   /*!
    * \brief Returns the capture piece
    *

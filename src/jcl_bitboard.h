@@ -65,6 +65,8 @@ private:
     None,
   };
 
+
+  void generateBishopAttacks(uint64_t rooks, uint64_t friendly, uint64_t enemy, Piece piece, MoveList & moveList) const;
   /*!
    * \brief Generates the castling moves
    *
@@ -80,11 +82,30 @@ private:
 
   void generateEvasiveMoves(uint8_t index, MoveList & moveList) const;
 
-  void generateMoves(uint8_t index, bool includeCastling, MoveList & moveList) const;
+  void generateLeapMoves(uint64_t pieceBitBoard, Piece piece, const uint64_t * moves, uint64_t friendly, uint64_t enemy, MoveList & moveList) const;
+
+  //void generateKnightMoves(uint8_t index, uint64_t friendlyPieces, uint64_t enemy, MoveList & moveList) const;
+
+  void generatePawnAttacks(uint64_t pawns, const uint64_t * pawnAttacks, uint64_t enemy, uint64_t promoRank, MoveList & moveList) const;
+  void generatePawnPushesBlack(uint64_t pawns, uint64_t friendly, MoveList & moveList) const;
+  void generatePawnPushesWhite(uint64_t pawns, uint64_t friendly, MoveList & moveList) const;
+  void generateRookAttacks(uint64_t rooks, uint64_t friendly, uint64_t enemy, Piece piece, MoveList & moveList) const;
+
+  //void generateMoves(uint8_t index, bool includeCastling, MoveList & moveList) const;
 
   void init();
 
   void initBoard();
+
+  void initBishopAttacks();
+
+  void initKingMoves();
+
+  void initKnightMoves();
+
+  void initPawnAttacks();
+
+  void initRookAttacks();
 
   /*!
    * \brief Determines if a cell is attacked
@@ -102,6 +123,16 @@ private:
    */
   bool isCellAttacked(uint8_t index, Color attackColor) const;
 
+  void extractMoves(uint64_t bitBoard, MoveList & moveList) const;
+
+  void pushMove(uint8_t from,
+                uint8_t to,
+                Piece piece,
+                Piece capture,
+                Piece promote,
+                Move::Type type,
+                MoveList & moveList) const;
+
   BitBoardPiece translatePiece(Piece piece, Color color) const;
   void updateAggregateBitBoards();
   void writeBitBoard(uint64_t bb, std::ostream & output) const;
@@ -114,6 +145,12 @@ private:
   uint64_t mMask[64];                                    // Bit board masks for each square
   uint64_t mBitboards[12];                               // Bitboard for each type of piece
   Piece mPieces[64];                                     // Piece type on each square
+  uint64_t mBishopAttacks[64];
+  uint64_t mKingMoves[64];
+  uint64_t mKnightMoves[64];
+  uint64_t mPawnAttacksBlack[64];
+  uint64_t mPawnAttacksWhite[64];
+  uint64_t mRookAttacks[64];
   Color mColors[64];                                     // Color on each square
   std::map<BitBoardPiece, jcl::PieceType> mPieceToType;  // Map of BitBoardPiece type to PieceType
 };

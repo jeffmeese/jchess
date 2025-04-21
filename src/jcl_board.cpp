@@ -118,11 +118,9 @@ void Board::pushMove(uint8_t sourceRow,
                      Move::Type type,
                      MoveList & moveList) const
 {
-  Move::Position sourcePosition = {sourceRow, sourceCol};
-  Move::Position destPosition = {destRow, destCol};
-  Move::Pieces pieces = {piece, capturedPiece, promotedPiece};
-  Move::BoardState boardState = {mCastlingRights, mEnPassantColumn, mHalfMoveClock, mFullMoveCounter};
-  Move newMove(sourcePosition, destPosition, pieces, boardState, type);
+  Move newMove(sourceRow, sourceCol, destRow, destCol, mCastlingRights, mEnPassantColumn, mHalfMoveClock, mFullMoveCounter,
+               piece, type, capturedPiece, promotedPiece);
+
   moveList.addMove(newMove);
 }
 

@@ -1,6 +1,8 @@
 set(TARGET_NAME jcl)
 set(BUILD_TYPE STATIC)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FA")
+
 set(HDR_FILES
     jcl_bitboard.h
     jcl_board.h
