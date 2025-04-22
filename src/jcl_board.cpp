@@ -156,6 +156,27 @@ bool Board::setPosition(const std::string & fenString)
     return false;
   }
 
+  mKingColumn[Color::Black] = mKingColumn[Color::White] = 8;
+  mKingRow[Color::Black] = mKingRow[Color::White] = 8;
+
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    for (uint8_t j = 0; j < 8; j++)
+    {
+      PieceType pieceType = fen.getPieceType(i, j);
+      if (pieceType == PieceType::WhiteKing)
+      {
+        mKingRow[Color::White] = i;
+        mKingColumn[Color::White] = j;
+      }
+
+      if (pieceType == PieceType::BlackKing)
+      {
+        mKingRow[Color::Black] = i;
+        mKingColumn[Color::Black] = j;
+      }
+    }
+  }
   setCastlingRights(fen.getCastlingRights());
   setEnPassantColumn(fen.getEnPassantColumn());
   setFullMoveCounter(fen.getFullMoveCounter());

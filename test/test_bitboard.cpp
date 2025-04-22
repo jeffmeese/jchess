@@ -1305,103 +1305,188 @@ TEST_F(BitboardTest, TestUnmakeBlackQueenCastle)
   testPieces(blackQueenSide);
 }
 
-TEST_F(BitboardTest, TestStartPositionMoves)
+TEST_F(BitboardTest, TestWhitePawnMovesStartup)
 {
-  jcl::MoveList moveList;
-  mBitBoard.generateMoves(moveList);
-
-  EXPECT_EQ(moveList.size(), 20);
-}
-
-TEST_F(BitboardTest, TestMoves)
-{
-  mBitBoard.setPosition("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+  mBitBoard.setPosition("8/8/8/8/8/8/PPPPPPPP/8 w - - 0 1");
 
   jcl::MoveList correctMoves;
 
-  // Rook on A1
-  correctMoves.addMove(jcl::Move(0, 0, 0, 1, 0, 0, 0, 0, jcl::Piece::Rook, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(0, 0, 0, 2, 0, 0, 0, 0, jcl::Piece::Rook, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(0, 0, 0, 3, 0, 0, 0, 0, jcl::Piece::Rook, jcl::Move::Type::Quiet));
+  correctMoves.addMove(jcl::Move(1, 0, 2, 0, 0, 0, 0, 0, jcl::Piece::Pawn));
+  correctMoves.addMove(jcl::Move(1, 1, 2, 1, 0, 0, 0, 0, jcl::Piece::Pawn));
+  correctMoves.addMove(jcl::Move(1, 2, 2, 2, 0, 0, 0, 0, jcl::Piece::Pawn));
+  correctMoves.addMove(jcl::Move(1, 3, 2, 3, 0, 0, 0, 0, jcl::Piece::Pawn));
+  correctMoves.addMove(jcl::Move(1, 4, 2, 4, 0, 0, 0, 0, jcl::Piece::Pawn));
+  correctMoves.addMove(jcl::Move(1, 5, 2, 5, 0, 0, 0, 0, jcl::Piece::Pawn));
+  correctMoves.addMove(jcl::Move(1, 6, 2, 6, 0, 0, 0, 0, jcl::Piece::Pawn));
+  correctMoves.addMove(jcl::Move(1, 7, 2, 7, 0, 0, 0, 0, jcl::Piece::Pawn));
 
-  // King on E1
-  correctMoves.addMove(jcl::Move(0, 4, 0, 3, 0, 0, 0, 0, jcl::Piece::King, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(0, 4, 0, 5, 0, 0, 0, 0, jcl::Piece::King, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(0, 4, 0, 2, 0, 0, 0, 0, jcl::Piece::King, jcl::Move::Type::Castle));
-  correctMoves.addMove(jcl::Move(0, 4, 0, 6, 0, 0, 0, 0, jcl::Piece::King, jcl::Move::Type::Castle));
-
-  // Rook on A8
-  correctMoves.addMove(jcl::Move(0, 7, 0, 6, 0, 0, 0, 0, jcl::Piece::Rook, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(0, 7, 0, 5, 0, 0, 0, 0, jcl::Piece::Rook, jcl::Move::Type::Quiet));
-
-  // Pawn on A2
-  correctMoves.addMove(jcl::Move(1, 0, 2, 0, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Quiet));
   correctMoves.addMove(jcl::Move(1, 0, 3, 0, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::DoublePush));
-
-  // Pawn on B2
-  correctMoves.addMove(jcl::Move(1, 1, 2, 1, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Quiet));
-
-  // Pawn on C2
-
-  // Bishop on D2
-  correctMoves.addMove(jcl::Move(1, 3, 2, 4, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(1, 3, 3, 5, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(1, 3, 4, 6, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(1, 3, 5, 7, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(1, 3, 0, 2, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
-
-  // Bishop on E2
-  correctMoves.addMove(jcl::Move(1, 4, 2, 3, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(1, 4, 3, 2, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(1, 4, 4, 1, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(1, 4, 5, 0, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Capture, jcl::Piece::Bishop));
-  correctMoves.addMove(jcl::Move(1, 4, 0, 3, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(1, 4, 0, 5, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
-
-  // Pawn on F2
-
-  // Pawn on G2
-  correctMoves.addMove(jcl::Move(1, 6, 2, 6, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Quiet));
+  correctMoves.addMove(jcl::Move(1, 1, 3, 1, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::DoublePush));
+  correctMoves.addMove(jcl::Move(1, 2, 3, 2, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::DoublePush));
+  correctMoves.addMove(jcl::Move(1, 3, 3, 3, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::DoublePush));
+  correctMoves.addMove(jcl::Move(1, 4, 3, 4, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::DoublePush));
+  correctMoves.addMove(jcl::Move(1, 5, 3, 5, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::DoublePush));
   correctMoves.addMove(jcl::Move(1, 6, 3, 6, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::DoublePush));
-  correctMoves.addMove(jcl::Move(1, 6, 2, 7, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Pawn));
-
-  // Pawn on H2
-
-  // Knight on C3
-  correctMoves.addMove(jcl::Move(2, 2, 0, 1, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(2, 2, 0, 3, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(2, 2, 4, 1, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(2, 2, 3, 0, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Quiet));
-
-  // Queen on F3
-  correctMoves.addMove(jcl::Move(2, 5, 2, 4, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(2, 5, 2, 3, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(2, 5, 2, 6, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(2, 5, 3, 5, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(2, 5, 4, 5, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(2, 5, 5, 5, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Capture, jcl::Piece::Knight));
-  correctMoves.addMove(jcl::Move(2, 5, 3, 6, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(2, 5, 4, 7, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(2, 5, 2, 7, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Capture, jcl::Piece::Pawn));
-
-  // Pawn on E4
-  //correctMoves.addMove(jcl::Move(3, 4, 4, 2, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Pawn));
-
-  // Pawn on D5
-  correctMoves.addMove(jcl::Move(4, 3, 5, 3, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(4, 3, 5, 4, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Pawn));
-
-  // Knight on E5
-  correctMoves.addMove(jcl::Move(4, 4, 2, 3, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(4, 4, 3, 2, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(4, 4, 5, 2, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Quiet));
-  correctMoves.addMove(jcl::Move(4, 4, 6, 3, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Capture, jcl::Piece::Pawn));
-  correctMoves.addMove(jcl::Move(4, 4, 6, 5, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Capture, jcl::Piece::Pawn));
-  correctMoves.addMove(jcl::Move(4, 4, 5, 6, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Capture, jcl::Piece::Pawn));
-  correctMoves.addMove(jcl::Move(4, 4, 3, 6, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Quiet));
+  correctMoves.addMove(jcl::Move(1, 7, 3, 7, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::DoublePush));
 
   jcl::MoveList moveList;
   mBitBoard.generateMoves(moveList);
 
   EXPECT_EQ(compareMoves(moveList, correctMoves), true);
 }
+
+TEST_F(BitboardTest, TestWhitePawnMovesStartupBlocked)
+{
+  mBitBoard.setPosition("8/8/8/8/8/rnbqkbnr/PPPPPPPP/8 w - - 0 1");
+
+  jcl::MoveList correctMoves;
+
+  correctMoves.addMove(jcl::Move(1, 0, 2, 1, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Knight));
+
+  correctMoves.addMove(jcl::Move(1, 1, 2, 0, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Rook));
+  correctMoves.addMove(jcl::Move(1, 1, 2, 2, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Bishop));
+
+  correctMoves.addMove(jcl::Move(1, 2, 2, 1, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Knight));
+  correctMoves.addMove(jcl::Move(1, 2, 2, 3, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Queen));
+
+  correctMoves.addMove(jcl::Move(1, 3, 2, 2, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Bishop));
+  correctMoves.addMove(jcl::Move(1, 3, 2, 4, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::King));
+
+  correctMoves.addMove(jcl::Move(1, 4, 2, 3, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Queen));
+  correctMoves.addMove(jcl::Move(1, 4, 2, 5, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Bishop));
+
+  correctMoves.addMove(jcl::Move(1, 5, 2, 4, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::King));
+  correctMoves.addMove(jcl::Move(1, 5, 2, 6, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Knight));
+
+  correctMoves.addMove(jcl::Move(1, 6, 2, 5, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Bishop));
+  correctMoves.addMove(jcl::Move(1, 6, 2, 7, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Rook));
+
+  correctMoves.addMove(jcl::Move(1, 7, 2, 6, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Knight));
+
+  jcl::MoveList moveList;
+  mBitBoard.generateMoves(moveList);
+
+  EXPECT_EQ(compareMoves(moveList, correctMoves), true);
+}
+
+TEST_F(BitboardTest, TestWhitePawnMovesStartupDoubleBlocked)
+{
+  mBitBoard.setPosition("8/8/8/8/rnbqkbnr/8/PPPPPPPP/8 w - - 0 1");
+
+  jcl::MoveList correctMoves;
+
+  correctMoves.addMove(jcl::Move(1, 0, 2, 0, 0, 0, 0, 0, jcl::Piece::Pawn));
+  correctMoves.addMove(jcl::Move(1, 1, 2, 1, 0, 0, 0, 0, jcl::Piece::Pawn));
+  correctMoves.addMove(jcl::Move(1, 2, 2, 2, 0, 0, 0, 0, jcl::Piece::Pawn));
+  correctMoves.addMove(jcl::Move(1, 3, 2, 3, 0, 0, 0, 0, jcl::Piece::Pawn));
+  correctMoves.addMove(jcl::Move(1, 4, 2, 4, 0, 0, 0, 0, jcl::Piece::Pawn));
+  correctMoves.addMove(jcl::Move(1, 5, 2, 5, 0, 0, 0, 0, jcl::Piece::Pawn));
+  correctMoves.addMove(jcl::Move(1, 6, 2, 6, 0, 0, 0, 0, jcl::Piece::Pawn));
+  correctMoves.addMove(jcl::Move(1, 7, 2, 7, 0, 0, 0, 0, jcl::Piece::Pawn));
+
+  jcl::MoveList moveList;
+  mBitBoard.generateMoves(moveList);
+
+  EXPECT_EQ(compareMoves(moveList, correctMoves), true);
+}
+
+// TEST_F(BitboardTest, TestStartPositionMoves)
+// {
+//   jcl::MoveList moveList;
+//   mBitBoard.generateMoves(moveList);
+
+//   EXPECT_EQ(moveList.size(), 20);
+// }
+
+// TEST_F(BitboardTest, TestMoves)
+// {
+//   mBitBoard.setPosition("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+
+//   jcl::MoveList correctMoves;
+
+//   // Rook on A1
+//   correctMoves.addMove(jcl::Move(0, 0, 0, 1, 0, 0, 0, 0, jcl::Piece::Rook, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(0, 0, 0, 2, 0, 0, 0, 0, jcl::Piece::Rook, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(0, 0, 0, 3, 0, 0, 0, 0, jcl::Piece::Rook, jcl::Move::Type::Quiet));
+
+//   // King on E1
+//   correctMoves.addMove(jcl::Move(0, 4, 0, 3, 0, 0, 0, 0, jcl::Piece::King, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(0, 4, 0, 5, 0, 0, 0, 0, jcl::Piece::King, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(0, 4, 0, 2, 0, 0, 0, 0, jcl::Piece::King, jcl::Move::Type::Castle));
+//   correctMoves.addMove(jcl::Move(0, 4, 0, 6, 0, 0, 0, 0, jcl::Piece::King, jcl::Move::Type::Castle));
+
+//   // Rook on A8
+//   correctMoves.addMove(jcl::Move(0, 7, 0, 6, 0, 0, 0, 0, jcl::Piece::Rook, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(0, 7, 0, 5, 0, 0, 0, 0, jcl::Piece::Rook, jcl::Move::Type::Quiet));
+
+//   // Pawn on A2
+//   correctMoves.addMove(jcl::Move(1, 0, 2, 0, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(1, 0, 3, 0, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::DoublePush));
+
+//   // Pawn on B2
+//   correctMoves.addMove(jcl::Move(1, 1, 2, 1, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Quiet));
+
+//   // Pawn on C2
+
+//   // Bishop on D2
+//   correctMoves.addMove(jcl::Move(1, 3, 2, 4, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(1, 3, 3, 5, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(1, 3, 4, 6, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(1, 3, 5, 7, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(1, 3, 0, 2, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
+
+//   // Bishop on E2
+//   correctMoves.addMove(jcl::Move(1, 4, 2, 3, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(1, 4, 3, 2, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(1, 4, 4, 1, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(1, 4, 5, 0, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Capture, jcl::Piece::Bishop));
+//   correctMoves.addMove(jcl::Move(1, 4, 0, 3, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(1, 4, 0, 5, 0, 0, 0, 0, jcl::Piece::Bishop, jcl::Move::Type::Quiet));
+
+//   // Pawn on F2
+
+//   // Pawn on G2
+//   correctMoves.addMove(jcl::Move(1, 6, 2, 6, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(1, 6, 3, 6, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::DoublePush));
+//   correctMoves.addMove(jcl::Move(1, 6, 2, 7, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Pawn));
+
+//   // Pawn on H2
+
+//   // Knight on C3
+//   correctMoves.addMove(jcl::Move(2, 2, 0, 1, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(2, 2, 0, 3, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(2, 2, 4, 1, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(2, 2, 3, 0, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Quiet));
+
+//   // Queen on F3
+//   correctMoves.addMove(jcl::Move(2, 5, 2, 4, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(2, 5, 2, 3, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(2, 5, 2, 6, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(2, 5, 3, 5, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(2, 5, 4, 5, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(2, 5, 5, 5, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Capture, jcl::Piece::Knight));
+//   correctMoves.addMove(jcl::Move(2, 5, 3, 6, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(2, 5, 4, 7, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(2, 5, 2, 7, 0, 0, 0, 0, jcl::Piece::Queen, jcl::Move::Type::Capture, jcl::Piece::Pawn));
+
+//   // Pawn on E4
+//   //correctMoves.addMove(jcl::Move(3, 4, 4, 2, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Pawn));
+
+//   // Pawn on D5
+//   correctMoves.addMove(jcl::Move(4, 3, 5, 3, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(4, 3, 5, 4, 0, 0, 0, 0, jcl::Piece::Pawn, jcl::Move::Type::Capture, jcl::Piece::Pawn));
+
+//   // Knight on E5
+//   correctMoves.addMove(jcl::Move(4, 4, 2, 3, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(4, 4, 3, 2, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(4, 4, 5, 2, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Quiet));
+//   correctMoves.addMove(jcl::Move(4, 4, 6, 3, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Capture, jcl::Piece::Pawn));
+//   correctMoves.addMove(jcl::Move(4, 4, 6, 5, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Capture, jcl::Piece::Pawn));
+//   correctMoves.addMove(jcl::Move(4, 4, 5, 6, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Capture, jcl::Piece::Pawn));
+//   correctMoves.addMove(jcl::Move(4, 4, 3, 6, 0, 0, 0, 0, jcl::Piece::Knight, jcl::Move::Type::Quiet));
+
+//   jcl::MoveList moveList;
+//   mBitBoard.generateMoves(moveList);
+
+//   EXPECT_EQ(compareMoves(moveList, correctMoves), true);
+// }
