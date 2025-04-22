@@ -206,10 +206,20 @@ void ConsoleGame::handleMove(std::istringstream & iss)
   if (!parseMovePos(moveString, srcRow, srcCol, dstRow, dstCol))
     return;
 
-  jcl::Move move(srcRow, srcCol, dstRow, dstCol,
-                 mBoard->getCastlingRights(), mBoard->getEnpassantColumn(), mBoard->getHalfMoveClock(), mBoard->getFullMoveNumber(),
-                 jcl::Piece::Pawn, jcl::Move::Type::Quiet);
-  doMove(&move);
+  jcl::MoveList moveList;
+  mBoard->generateMoves(moveList);
+
+  int moveIndex = getMoveIndex(srcRow, srcCol, dstRow, dstCol, moveList);
+  if (moveIndex == -1)
+  {
+    std::cout << "Sorry " << moveString << " is not a valid move\n";
+    std::cout << "Type divide 1 to sell all available moves\n";
+    return;
+  }
+
+  const jcl::Move * move = moveList.moveAt(moveIndex);
+  doMove(move);
+
   return;
 
   // // Generate the candidate moves from the board

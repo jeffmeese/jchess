@@ -266,6 +266,69 @@ void FastBoard8x8::doReset()
   initBoard();
 }
 
+bool FastBoard8x8::doSetPieceType(uint8_t row, uint8_t col, PieceType pieceType)
+{
+  uint8_t index = getIndex(row, col);
+
+  switch (pieceType)
+  {
+  case PieceType::WhitePawn:
+    mPieces[index] = Piece::Pawn;
+    mColors[index] = Color::White;
+    break;
+  case PieceType::WhiteRook:
+    mPieces[index] = Piece::Rook;
+    mColors[index] = Color::White;
+    break;
+  case PieceType::WhiteBishop:
+    mPieces[index] = Piece::Bishop;
+    mColors[index] = Color::White;
+    break;
+  case PieceType::WhiteKnight:
+    mPieces[index] = Piece::Knight;
+    mColors[index] = Color::White;
+    break;
+  case PieceType::WhiteQueen:
+    mPieces[index] = Piece::Queen;
+    mColors[index] = Color::White;
+    break;
+  case PieceType::WhiteKing:
+    mPieces[index] = Piece::King;
+    mColors[index] = Color::White;
+    break;
+  case PieceType::BlackPawn:
+    mPieces[index] = Piece::Pawn;
+    mColors[index] = Color::Black;
+    break;
+  case PieceType::BlackRook:
+    mPieces[index] = Piece::Rook;
+    mColors[index] = Color::Black;
+    break;
+  case PieceType::BlackBishop:
+    mPieces[index] = Piece::Bishop;
+    mColors[index] = Color::Black;
+    break;
+  case PieceType::BlackKnight:
+    mPieces[index] = Piece::Knight;
+    mColors[index] = Color::Black;
+    break;
+  case PieceType::BlackQueen:
+    mPieces[index] = Piece::Queen;
+    mColors[index] = Color::Black;
+    break;
+  case PieceType::BlackKing:
+    mPieces[index] = Piece::King;
+    mColors[index] = Color::Black;
+    break;
+  case PieceType::None:
+    mPieces[index] = Piece::None;
+    mColors[index] = Color::None;
+    break;
+  }
+
+  return true;
+}
+
 bool FastBoard8x8::doSetPosition(const Fen & fen)
 {
   for (uint8_t i = 0; i < 8; i++)

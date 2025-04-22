@@ -1461,12 +1461,12 @@ void BitBoard::initKnightMoves()
 
       moveBitboard |= (bbIndex << 6)  & ~FILE_AB;
       moveBitboard |= (bbIndex >> 10) & ~FILE_AB;
-      moveBitboard |= (bbIndex << 15) & ~FILE_AB;
-      moveBitboard |= (bbIndex >> 17) & ~FILE_AB;
+      moveBitboard |= (bbIndex << 15) & ~FILE_A;
+      moveBitboard |= (bbIndex >> 17) & ~FILE_A;
       moveBitboard |= (bbIndex << 10) & ~FILE_GH;
-      moveBitboard |= (bbIndex << 17) & ~FILE_GH;
+      moveBitboard |= (bbIndex << 17) & ~FILE_H;
       moveBitboard |= (bbIndex >> 6)  & ~FILE_GH;
-      moveBitboard |= (bbIndex >> 15) & ~FILE_GH;
+      moveBitboard |= (bbIndex >> 15) & ~FILE_H;
 
       mKnightMoves[index] = moveBitboard;
     }
