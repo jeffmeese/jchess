@@ -161,8 +161,8 @@ bool BitBoard::doGenerateMoves(MoveList & moveList) const
     generatePawnAttacks(pawns, mPawnAttacksBlack, enemy, RANK_1, moveList);
   }
 
-  generateLeapMoves(knights, Piece::Knight, mKnightMoves, friendly, enemy, moveList);
-  generateLeapMoves(kings, Piece::King, mKingMoves, friendly, enemy, moveList);
+  generateLeapAttacks(knights, Piece::Knight, mKnightMoves, friendly, enemy, moveList);
+  generateLeapAttacks(kings, Piece::King, mKingMoves, friendly, enemy, moveList);
   generateRookAttacks(rooks, friendly, enemy, Piece::Rook, moveList);
   generateBishopAttacks(bishops, friendly, enemy, Piece::Bishop, moveList);
   generateRookAttacks(queens, friendly, enemy, Piece::Queen, moveList);
@@ -950,12 +950,12 @@ void BitBoard::generateCastlingMoves(MoveList & moveList) const
   }
 }
 
-void BitBoard::generateEvasiveMoves(uint8_t index, MoveList & moveList) const
-{
+// void BitBoard::generateEvasiveMoves(uint8_t index, MoveList & moveList) const
+// {
 
-}
+// }
 
-void BitBoard::generateLeapMoves(uint64_t pieceBitBoard, Piece piece, const uint64_t * moves, uint64_t friendly, uint64_t enemy, MoveList & moveList) const
+void BitBoard::generateLeapAttacks(uint64_t pieceBitBoard, Piece piece, const uint64_t * moves, uint64_t friendly, uint64_t enemy, MoveList & moveList) const
 {
   while (pieceBitBoard)
   {

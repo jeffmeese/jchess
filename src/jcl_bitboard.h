@@ -79,19 +79,11 @@ private:
    * \param moveList The move list to hold the moves
    */
   void generateCastlingMoves(MoveList & moveList) const;
-
-  void generateEvasiveMoves(uint8_t index, MoveList & moveList) const;
-
-  void generateLeapMoves(uint64_t pieceBitBoard, Piece piece, const uint64_t * moves, uint64_t friendly, uint64_t enemy, MoveList & moveList) const;
-
-  //void generateKnightMoves(uint8_t index, uint64_t friendlyPieces, uint64_t enemy, MoveList & moveList) const;
-
+  void generateLeapAttacks(uint64_t pieceBitBoard, Piece piece, const uint64_t * moves, uint64_t friendly, uint64_t enemy, MoveList & moveList) const;
   void generatePawnAttacks(uint64_t pawns, const uint64_t * pawnAttacks, uint64_t enemy, uint64_t promoRank, MoveList & moveList) const;
   void generatePawnPushesBlack(uint64_t pawns, uint64_t friendly, MoveList & moveList) const;
   void generatePawnPushesWhite(uint64_t pawns, uint64_t friendly, MoveList & moveList) const;
   void generateRookAttacks(uint64_t rooks, uint64_t friendly, uint64_t enemy, Piece piece, MoveList & moveList) const;
-
-  //void generateMoves(uint8_t index, bool includeCastling, MoveList & moveList) const;
 
   void init();
 
